@@ -49,7 +49,7 @@ export async function funcCompile(compileConfig: CompilerConfig): Promise<Compil
 
     let mod = await CompilerModule();
 
-    let sourcesArr: Array<string> = [];
+    let sourcesArr: string[] = [];
 
     (Object.keys(compileConfig.sources)).forEach((fileName) => {
         sourcesArr.push(fileName);
