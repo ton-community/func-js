@@ -22,8 +22,8 @@ export type CompilerConfig = {
  * If success
  * {
  *      status: 'ok',
- *      code_boc: <serialized code cell into BOC with base64 encoding>,
- *      fift_code: <fift code from func compiler>
+ *      codeBoc: <serialized code cell into BOC with base64 encoding>,
+ *      fiftCode: <fift code from func compiler>
  * }
  * If failure
  * {
@@ -34,8 +34,8 @@ export type CompilerConfig = {
  */
 export type SuccessResult = {
     status: "ok",
-    code_boc: string,
-    fift_code: string
+    codeBoc: string,
+    fiftCode: string
 };
 
 export type ErrorResult = {
@@ -44,6 +44,24 @@ export type ErrorResult = {
 };
 
 export type CompileResult = SuccessResult | ErrorResult;
+
+export type CompilerVersion = {
+    funcVersion: string,
+    funcFiftLibCommitHash: string,
+    funcFiftLibCommitDate: string
+}
+
+export async function compilerVersion(): Promise<CompilerVersion> {
+    let mod = await CompilerModule();
+
+    let versionJsonPTR = mod._version();
+
+    let versionJson = mod.UTF8ToString(versionJsonPTR);
+
+    mod._free(versionJsonPTR);
+
+    return JSON.parse(versionJson);
+}
 
 export async function funcCompile(compileConfig: CompilerConfig): Promise<CompileResult> {
 
@@ -62,16 +80,16 @@ export async function funcCompile(compileConfig: CompilerConfig): Promise<Compil
         optLevel: compileConfig.optLevel
     });
 
-    let configJsonPTR = await mod._malloc(configJson.length + 1);
+    let configJsonPTR = mod._malloc(configJson.length + 1);
     mod.stringToUTF8(configJson, configJsonPTR, configJson.length + 1);
 
-    let retPTR = await mod._func_compile(configJsonPTR);
+    let retPTR = mod._func_compile(configJsonPTR);
 
-    await mod._free(configJsonPTR);
+    mod._free(configJsonPTR);
 
-    let retJson = await mod.UTF8ToString(retPTR);
+    let retJson = mod.UTF8ToString(retPTR);
 
-    await mod._free(retPTR);
+    mod._free(retPTR);
 
     return JSON.parse(retJson);
 }
