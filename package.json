@@ -1,0 +1,28 @@
+{
+    "name": "ton-compiler",
+    "version": "1.0.0",
+    "description": "ToN FUNC and FIFT compiler",
+    "main": "dist/compiler.js",
+    "author": "Alexey Kokinos <akkokinos@gmail.com>",
+    "license": "MIT",
+    "private": "false",
+    "type": "module",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/the-ton-tech/ton-compiler.git"
+    },
+    "scripts": {
+        "build": "tsc && cp ./src/wasmlib/funcfiftlib.wasm ./dist/wasmlib/funcfiftlib.wasm",
+        "test": "jest"
+    },
+    "dependencies": {},
+    "devDependencies": {
+        "@babel/core": "^7.16.0",
+        "@babel/preset-env": "^7.16.4",
+        "@babel/preset-typescript": "^7.16.0",
+        "@types/jest": "^24.0.23",
+        "jest": "^26.4.2",
+        "ts-jest": "^26.4.0",
+        "typescript": "^3.7.2"
+    }
+}

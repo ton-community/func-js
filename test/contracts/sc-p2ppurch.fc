@@ -1,0 +1,60 @@
+;; Smart contact of P2P purchasing with guarantor
+
+;; storage scheme
+;;
+;; storage#_ seller_address:MsgAddress buyer_address:MsgAddress
+;;          guarantor_pubk:uint256 = Storage;
+_ load_data() {
+  var ds = get_data().begin_parse();
+  return (
+    ds~load_msg_addr(),
+    ds~load_msg_addr(),
+    ds~load_uint(256)
+  );
+}
+
+() recv_internal(slice in_msg) impure {
+  throw(error::internal_msg());
+}
+
+() send_to(slice address) impure {
+  var msg = begin_cell()
+      .store_uint(0x18, 6)
+      .store_slice(address)
+      .store_coins(0)
+      .store_uint(0, 1 + 4 + 4 + 64 + 32 + 1 + 1);
+
+  send_raw_message(msg.end_cell(), 128 + 32);
+}
+
+() recv_external(slice in_msg) impure {
+  var signature = in_msg~load_bits(512);
+  var cs = in_msg;
+  (slice seller_address, slice buyer_address, int guarantor_pubk) = load_data();
+  throw_unless(error::invalid_sig(), check_signature(slice_hash(in_msg), signature, guarantor_pubk));
+  accept_message();
+
+  int op = cs~load_uint(8);
+
+  if (op == op::accept()) {
+    send_to(seller_address);
+    return ();
+  }
+
+  if (op == op::decline()) {
+    send_to(buyer_address);
+    return ();
+  }
+
+  throw(error::invalid_op());
+}
+
+;; Get methods
+
+;; info#_ sc_balance:Grams seller_address:MsgAddress buyer_address:MsgAddress
+;;       guarantor_pubk:uint256 = Info
+(int, slice, slice, int) get_info() method_id {
+  (slice seller_address, slice buyer_address, int guarantor_pubk) = load_data();
+  int balance = first(get_balance());
+  return (balance, seller_address, buyer_address, guarantor_pubk);
+}

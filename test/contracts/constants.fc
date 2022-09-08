@@ -1,0 +1,10 @@
+;; contants
+
+;; ops
+int op::accept() asm "0x01 PUSHINT";
+int op::decline() asm "0x02 PUSHINT";
+
+;; errors
+int error::invalid_sig() asm "33 PUSHINT";
+int error::invalid_op() asm "34 PUSHINT";
+int error::internal_msg() asm "0xffff PUSHINT";
