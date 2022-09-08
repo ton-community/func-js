@@ -1,9 +1,22 @@
-import CompilerModule from './wasmlib/funcfiftlib.js';
+var CompilerModule = require('./wasmlib/funcfiftlib.js');
 
-type CompilerConfig = {
-    sources: Object,
+export type CompilerConfig = {
+    sources: { [filename: string]: string },
     optLevel: number
-}
+};
+
+export type SuccessResult = {
+    status: "ok",
+    code_boc: string,
+    fift_code: string
+};
+
+export type ErrorResult = {
+    status: "error",
+    message: string
+};
+
+export type CompileResult = SuccessResult | ErrorResult;
 
 /*
  * CompilerConfig example:
@@ -18,13 +31,13 @@ type CompilerConfig = {
  *
  */
 
-export async function tonCompile(compileConfig: CompilerConfig): Promise<Object> {
+export async function funcCompile(compileConfig: CompilerConfig): Promise<CompileResult> {
 
     let mod = await CompilerModule();
 
     let sourcesArr: Array<string> = [];
 
-    (Object.keys(compileConfig.sources) as (keyof typeof compileConfig.sources)[]).forEach((fileName) => {
+    (Object.keys(compileConfig.sources)).forEach((fileName) => {
         sourcesArr.push(fileName);
         let code: string = compileConfig.sources[fileName] as any;
         mod.FS.writeFile(fileName, code);
@@ -48,7 +61,7 @@ export async function tonCompile(compileConfig: CompilerConfig): Promise<Object>
     let configJsonPTR = mod._malloc(configJson.length + 1);
     mod.stringToUTF8(configJson, configJsonPTR, configJson.length + 1);
 
-    let retPTR = mod._ton_compile(configJsonPTR);
+    let retPTR = mod._func_compile(configJsonPTR);
 
     mod._free(configJsonPTR);
 

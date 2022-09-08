@@ -6,23 +6,21 @@
     "author": "Alexey Kokinos <akkokinos@gmail.com>",
     "license": "MIT",
     "private": "false",
-    "type": "module",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/the-ton-tech/ton-compiler.git"
     },
     "scripts": {
-        "build": "tsc && cp ./src/wasmlib/funcfiftlib.wasm ./dist/wasmlib/funcfiftlib.wasm",
-        "test": "jest"
+        "build": "tsc && yarn copy:wasm",
+        "test": "jest",
+        "copy:wasm": "cp -r ./src/wasmlib ./dist/wasmlib"
     },
     "dependencies": {},
     "devDependencies": {
-        "@babel/core": "^7.16.0",
-        "@babel/preset-env": "^7.16.4",
-        "@babel/preset-typescript": "^7.16.0",
         "@types/jest": "^24.0.23",
         "jest": "^26.4.2",
         "ts-jest": "^26.4.0",
-        "typescript": "^3.7.2"
+        "typescript": "^3.7.2",
+        "ton": "^11.18.2"
     }
 }
