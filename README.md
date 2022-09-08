@@ -32,10 +32,23 @@ async function buildCodeCell() {
         // ...
         return;
     }
-    
+
     let codeCell = Cell.fromBoc(Cell.fromBoc(Buffer.from(result.code_boc, "base64")))[0];
-   
 
     return codeCell;
+}
+```
+
+Also you can get compiler version if you want notify us about some issues.
+
+
+```typescript
+import {compilerVersion} from 'ton-compiler';
+
+async function getCompilerVersion() {
+
+    let version = await compilerVersion();
+
+    return version;
 }
 ```
