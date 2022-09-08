@@ -1,21 +1,18 @@
 # TON Func Contract Compiler
 
-This package allows to compile FUNC smart contracts to the BOC.
+This package aims to be headless FunC compiler. It compiles you FunC source code straight to BOC.
 
-The result BOC is encoded to base64 format. Also result has fift code of your contract.
+The resulting BOC is encoded to base64 format. Also result has fift code of your contract.
 
 ## How it works
 
-The package internally uses origin func and fift compilers wich combined to one lib and builded to WASM.
+Internally this package uses both FunC compiler and Fift interpreter combined to one lib and compiled to WASM.
+Also it has no dependency on file system, so you can use it in browsers too.
 
-## Usage
-
-You sould added to sources original [stdlib.fc](https://github.com/ton-blockchain/ton/blob/master/crypto/smartcont/stdlib.fc) file from ToN blockchain repo.
-
-This package is ussefully with [ton lib](https://github.com/tonwhales/ton)
+## Usage example
 
 ```typescript
-import * as TonCompiler from 'ton-compiler';
+import {compileFunc} from 'ton-compiler';
 import {Cell} from 'ton';
 
 
@@ -29,17 +26,16 @@ async function buildCodeCell() {
         }
     };
 
-    let result = await TonCompiler.funcCompile(conf);
+    let result = await funcCompile(conf);
 
     if (result.status === 'error') {
         // ...
         return;
     }
+    
+    let codeCell = Cell.fromBoc(Cell.fromBoc(Buffer.from(result.code_boc, "base64")))[0];
+   
 
-    result = result as TonCompiler.SuccessResult;
-
-    let cellCode = Cell.fromBoc(Cell.fromBoc(Buffer.from(result.code_boc, "base64")))[0];
-
-    return cellCode;
+    return codeCell;
 }
 ```
