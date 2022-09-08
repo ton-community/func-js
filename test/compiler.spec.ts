@@ -9,12 +9,11 @@ describe('ton-compiler', () => {
     it('should compile ToN contracts writen on func', async () => {
         let confObj = {
             optLevel: 2,
-            sources: {}
+            sources: {
+                "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', { encoding: 'utf-8'}),
+                "wallet-code.fc":  fs.readFileSync('./test/contracts/wallet-code.fc', { encoding: 'utf-8'})
+            }
         };
-        let code = fs.readFileSync('./test/contracts/stdlib.fc', { encoding: 'utf-8'});
-        Object.assign(confObj["sources"], {"stdlib.fc": code});
-        code = fs.readFileSync('./test/contracts/wallet-code.fc', { encoding: 'utf-8'});
-        Object.assign(confObj["sources"], {"wallet-code.fc": code});
 
         let result = await TonCompiler.funcCompile(confObj);
         expect(result.status).toEqual('ok');
