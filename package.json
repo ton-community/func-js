@@ -1,7 +1,7 @@
 {
     "name": "ton-compiler",
-    "version": "1.0.0",
-    "description": "ToN FUNC and FIFT compiler",
+    "version": "0.1.0",
+    "description": "The ToN func smart-contract compiler",
     "main": "dist/compiler.js",
     "author": "Alexey Kokinos <akkokinos@gmail.com>",
     "license": "MIT",

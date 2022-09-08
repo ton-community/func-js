@@ -1,10 +1,37 @@
 var CompilerModule = require('./wasmlib/funcfiftlib.js');
 
+/*
+ * CompilerConfig example:
+ * {
+ *      sources: {
+ *          "stdlib.fc": "<stdlib code>",
+ *          "contract1: "<contract1 code>",
+ *          ...
+ *      },
+ *      optLevel: number of <0-2> (recommend 2)
+ * }
+ *
+ */
 export type CompilerConfig = {
     sources: { [filename: string]: string },
     optLevel: number
 };
 
+/*
+ * CompileResult example:
+ * If success
+ * {
+ *      status: 'ok',
+ *      code_boc: <serialized code cell into BOC with base64 encoding>,
+ *      fift_code: <fift code from func compiler>
+ * }
+ * If failure
+ * {
+ *      status: 'error',
+ *      message: <the message with reason of failure>
+ * }
+ *
+ */
 export type SuccessResult = {
     status: "ok",
     code_boc: string,
@@ -18,19 +45,6 @@ export type ErrorResult = {
 
 export type CompileResult = SuccessResult | ErrorResult;
 
-/*
- * CompilerConfig example:
- * {
- *      sources: {
- *          "filename1": "<func code>",
- *          "filename2": "<func code>",
- *          ...
- *      },
- *      optLevel: number of <0-2> (recommend 2)
- * }
- *
- */
-
 export async function funcCompile(compileConfig: CompilerConfig): Promise<CompileResult> {
 
     let mod = await CompilerModule();
@@ -42,32 +56,22 @@ export async function funcCompile(compileConfig: CompilerConfig): Promise<Compil
         let code: string = compileConfig.sources[fileName] as any;
         mod.FS.writeFile(fileName, code);
     });
-    /*
-    var code = fs.readFileSync('./contracts/stdlib.fc');
-    mod.FS.writeFile('stdlib.fc', code);
-
-    code = fs.readFileSync('./contracts/constants.fc');
-    mod.FS.writeFile('constants.fc', code);
-
-    code = fs.readFileSync('./contracts/sc-p2ppurch.fc');
-    mod.FS.writeFile('sc-p2ppurch.fc', code);
-    */
 
     let configJson = JSON.stringify({
         sources: sourcesArr,
         optLevel: compileConfig.optLevel
     });
 
-    let configJsonPTR = mod._malloc(configJson.length + 1);
+    let configJsonPTR = await mod._malloc(configJson.length + 1);
     mod.stringToUTF8(configJson, configJsonPTR, configJson.length + 1);
 
-    let retPTR = mod._func_compile(configJsonPTR);
+    let retPTR = await mod._func_compile(configJsonPTR);
 
-    mod._free(configJsonPTR);
+    await mod._free(configJsonPTR);
 
-    let retJson = mod.UTF8ToString(retPTR);
+    let retJson = await mod.UTF8ToString(retPTR);
 
-    mod._free(retPTR);
+    await mod._free(retPTR);
 
     return JSON.parse(retJson);
 }
