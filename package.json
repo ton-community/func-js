@@ -13,7 +13,7 @@
     "scripts": {
         "build": "tsc && yarn copy:wasmlib",
         "test": "jest",
-        "copy:wasmlib": "rm -rf ./dist/wasmlib && mkdir ./dist/wasmlib && cp -r ./src/wasmlib/* ./dist/wasmlib/"
+        "copy:wasmlib": "rm -rf ./dist/wasmlib && mkdir ./dist/wasmlib && cp -r ./src/wasmlib/* ./dist/wasmlib/ && sed -i '1i\\/* eslint-disabled */' ./dist/wasmlib/funcfiftlib.js"
     },
     "dependencies": {},
     "devDependencies": {

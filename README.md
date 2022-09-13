@@ -52,3 +52,18 @@ async function getCompilerVersion() {
     return version;
 }
 ```
+
+## WEB integration
+
+The WASM library contains tools wich work in web and nodejs both. So you sould configure your webpack config for resolve some nodejs requires.
+
+```
+// webpack.config.js
+resolve: {
+    fallback: {
+        fs: false,
+        path: false,
+        crypto: false
+    }
+}
+```
