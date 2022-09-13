@@ -11,9 +11,9 @@
         "url": "git+https://github.com/the-ton-tech/ton-compiler.git"
     },
     "scripts": {
-        "build": "tsc && yarn copy:wasm",
+        "build": "tsc && yarn copy:wasmlib",
         "test": "jest",
-        "copy:wasm": "cp -r ./src/wasmlib ./dist/wasmlib"
+        "copy:wasmlib": "rm -rf ./dist/wasmlib && mkdir ./dist/wasmlib && cp -r ./src/wasmlib/* ./dist/wasmlib/"
     },
     "dependencies": {},
     "devDependencies": {
