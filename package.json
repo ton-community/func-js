@@ -1,6 +1,6 @@
 {
     "name": "ton-func",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "The TON FunC smart-contract compiler",
     "main": "dist/index.js",
     "author": "TonTech",
