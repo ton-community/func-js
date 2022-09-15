@@ -9,6 +9,9 @@
         "type": "git",
         "url": "git+https://github.com/the-ton-tech/ton-compiler.git"
     },
+    "files": [
+        "dist/**/*"
+    ],
     "scripts": {
         "build": "tsc && yarn copy:wasmlib",
         "test": "jest",
