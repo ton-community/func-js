@@ -7,7 +7,6 @@ The resulting BOC is encoded to base64 format. Also result has fift code of your
 ## How it works
 
 Internally this package uses both FunC compiler and Fift interpreter combined to one lib and compiled to WASM.
-Also it has no dependency on file system, so you can use it in browsers too.
 
 ## Usage example
 
@@ -33,7 +32,7 @@ async function buildCodeCell() {
         return;
     }
 
-    let codeCell = Cell.fromBoc(Cell.fromBoc(Buffer.from(result.code_boc, "base64")))[0];
+    let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
 
     return codeCell;
 }
@@ -55,7 +54,7 @@ async function getCompilerVersion() {
 
 ## WEB integration
 
-The WASM library contains tools wich work in web and nodejs both. So you sould configure your webpack config for resolve some nodejs requires.
+The WASM library contains tools wich allow to work in web and nodejs both, so you can use it in browsers too. So you sould configure your webpack for resolve some nodejs requires.
 
 ```
 // webpack.config.js
@@ -67,3 +66,5 @@ resolve: {
     }
 }
 ```
+
+Also you should configure webpack for including *.wasm file at build.
