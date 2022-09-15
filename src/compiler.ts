@@ -1,4 +1,4 @@
-var CompilerModule = require('./wasmlib/funcfiftlib.js');
+const CompilerModule = require('./wasmlib/funcfiftlib.js');
 
 /*
  * CompilerConfig example:
@@ -17,21 +17,6 @@ export type CompilerConfig = {
     optLevel: number
 };
 
-/*
- * CompileResult example:
- * If success
- * {
- *      status: 'ok',
- *      codeBoc: <serialized code cell into BOC with base64 encoding>,
- *      fiftCode: <fift code from func compiler>
- * }
- * If failure
- * {
- *      status: 'error',
- *      message: <the message with reason of failure>
- * }
- *
- */
 export type SuccessResult = {
     status: "ok",
     codeBoc: string,
@@ -64,26 +49,22 @@ export async function compilerVersion(): Promise<CompilerVersion> {
 }
 
 export async function funcCompile(compileConfig: CompilerConfig): Promise<CompileResult> {
-
     let mod = await CompilerModule();
 
     let sourcesArr: string[] = [];
 
     mod.FS.mkdir("/contracts");
 
-    (Object.keys(compileConfig.sources)).forEach((fileName) => {
+    for (let fileName in compileConfig.sources) {
+        let source = compileConfig.sources[fileName]
         sourcesArr.push(`/contracts/${fileName}`);
-        let code: string = compileConfig.sources[fileName] as any;
-        mod.FS.writeFile(`/contracts/${fileName}`, code);
-    });
+        mod.FS.writeFile(`/contracts/${fileName}`, source);
+    }
 
     let configJson = JSON.stringify({
         sources: sourcesArr,
         optLevel: compileConfig.optLevel
     });
-
-
-    console.log(configJson);
 
     let configJsonPTR = mod._malloc(configJson.length + 1);
     mod.stringToUTF8(configJson, configJsonPTR, configJson.length + 1);
