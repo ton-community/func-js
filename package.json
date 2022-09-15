@@ -1,5 +1,5 @@
 {
-    "name": "ton-compiler",
+    "name": "func-js",
     "version": "0.1.0",
     "description": "The TON FunC smart-contract compiler",
     "main": "dist/index.js",
