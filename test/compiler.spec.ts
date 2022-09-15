@@ -1,4 +1,4 @@
-import * as TonCompiler from '../src/compiler';
+import * as TonCompiler from '../src/index';
 import fs from 'fs';
 import {Cell} from 'ton';
 
