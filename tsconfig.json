@@ -9,11 +9,7 @@
         "strict": true,
         "skipLibCheck": true
     },
-    "files": [
-      "src/compiler.ts"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist/**/*"
+    "include": [
+      "src/**/*"
     ]
 }

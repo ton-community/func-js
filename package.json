@@ -2,7 +2,7 @@
     "name": "ton-compiler",
     "version": "0.1.0",
     "description": "The TON func smart-contract compiler",
-    "main": "dist/compiler.js",
+    "main": "dist/index.js",
     "author": "Alexey Kokinos <akkokinos@gmail.com>",
     "license": "MIT",
     "private": "false",
