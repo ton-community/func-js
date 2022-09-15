@@ -8,7 +8,7 @@ describe('ton-compiler', () => {
 
     it('should return compiler version', async () => {
 
-        let versionTest = JSON.parse(fs.readFileSync('./test/test_version.json', { encoding: 'utf-8' }));
+        let versionTest = JSON.parse(fs.readFileSync('version.json', { encoding: 'utf-8' }));
 
         let version = await TonCompiler.compilerVersion();
 
@@ -26,6 +26,7 @@ describe('ton-compiler', () => {
         };
 
         let result = await TonCompiler.funcCompile(confObj);
+
         expect(result.status).toEqual('ok');
 
         result = result as TonCompiler.SuccessResult;
