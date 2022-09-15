@@ -1,9 +1,9 @@
 {
     "name": "ton-compiler",
     "version": "0.1.0",
-    "description": "The TON func smart-contract compiler",
+    "description": "The TON FunC smart-contract compiler",
     "main": "dist/index.js",
-    "author": "Alexey Kokinos <akkokinos@gmail.com>",
+    "author": "TonTech",
     "license": "MIT",
     "private": "false",
     "repository": {
@@ -13,7 +13,8 @@
     "scripts": {
         "build": "tsc && yarn copy:wasmlib",
         "test": "jest",
-        "copy:wasmlib": "rm -rf ./dist/wasmlib && mkdir ./dist/wasmlib && cp -r ./src/wasmlib/* ./dist/wasmlib/"
+        "copy:wasmlib": "rm -rf ./dist/wasmlib && mkdir ./dist/wasmlib && cp -r ./src/wasmlib/* ./dist/wasmlib/",
+        "release": "rm -fr dist && tsc && yarn copy:wasmlib && jest && yarn publish"
     },
     "dependencies": {},
     "devDependencies": {

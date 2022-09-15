@@ -39,11 +39,9 @@ export type CompilerVersion = {
 export async function compilerVersion(): Promise<CompilerVersion> {
     let mod = await CompilerModule();
 
-    let versionJsonPTR = mod._version();
-
-    let versionJson = mod.UTF8ToString(versionJsonPTR);
-
-    mod._free(versionJsonPTR);
+    let versionJsonPointer = mod._version();
+    let versionJson = mod.UTF8ToString(versionJsonPointer);
+    mod._free(versionJsonPointer);
 
     return JSON.parse(versionJson);
 }
@@ -66,16 +64,16 @@ export async function funcCompile(compileConfig: CompilerConfig): Promise<Compil
         optLevel: compileConfig.optLevel
     });
 
-    let configJsonPTR = mod._malloc(configJson.length + 1);
-    mod.stringToUTF8(configJson, configJsonPTR, configJson.length + 1);
+    let configJsonPointer = mod._malloc(configJson.length + 1);
+    mod.stringToUTF8(configJson, configJsonPointer, configJson.length + 1);
 
-    let retPTR = mod._func_compile(configJsonPTR);
+    let resultPointer = mod._func_compile(configJsonPointer);
 
-    mod._free(configJsonPTR);
+    mod._free(configJsonPointer);
 
-    let retJson = mod.UTF8ToString(retPTR);
+    let retJson = mod.UTF8ToString(resultPointer);
 
-    mod._free(retPTR);
+    mod._free(resultPointer);
 
     return JSON.parse(retJson);
 }
