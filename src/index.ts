@@ -1,4 +1,10 @@
+import {base64Decode} from "./utils";
+
 const CompilerModule = require('./wasmlib/funcfiftlib.js');
+const {FuncFiftLibWasm} = require('./wasmlib/funcfiftlib.wasm.js')
+
+// Prepare binary
+const WasmBinary = base64Decode(FuncFiftLibWasm)
 
 /*
  * CompilerConfig example:
@@ -44,7 +50,7 @@ export type CompilerVersion = {
 }
 
 export async function compilerVersion(): Promise<CompilerVersion> {
-    let mod = await CompilerModule();
+    let mod = await CompilerModule({ wasmBinary: WasmBinary });
 
     let versionJsonPointer = mod._version();
     let versionJson = mod.UTF8ToString(versionJsonPointer);
@@ -65,7 +71,7 @@ export async function funcCompile(compileConfig: CompilerConfig): Promise<Compil
         }
     }
 
-    let mod = await CompilerModule();
+    let mod = await CompilerModule({ wasmBinary: WasmBinary });
     mod.FS.mkdir("/contracts");
 
     for (let fileName in compileConfig.sources) {

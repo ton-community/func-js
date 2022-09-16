@@ -1,6 +1,6 @@
 {
     "name": "@ton.org/func-js",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "The TON FunC smart-contract compiler",
     "main": "dist/index.js",
     "author": "TonTech",
@@ -13,10 +13,11 @@
         "dist/**/*"
     ],
     "scripts": {
-        "build": "tsc && yarn copy:wasmlib",
+        "copy:wasmlib": "rm -rf ./dist/wasmlib && mkdir ./dist/wasmlib && cp ./src/wasmlib/funcfiftlib.js ./dist/wasmlib/funcfiftlib.js && cp ./src/wasmlib/funcfiftlib.wasm.js ./dist/wasmlib/funcfiftlib.wasm.js",
+        "build": "yarn wasm:pack && tsc && yarn copy:wasmlib",
         "test": "jest",
-        "copy:wasmlib": "rm -rf ./dist/wasmlib && mkdir ./dist/wasmlib && cp -r ./src/wasmlib/* ./dist/wasmlib/",
-        "release": "rm -fr dist && tsc && yarn copy:wasmlib && jest && yarn publish"
+        "wasm:pack": "node ./scripts/pack_wasm.js",
+        "release": "rm -fr dist && jest && yarn build && yarn publish"
     },
     "dependencies": {},
     "devDependencies": {
