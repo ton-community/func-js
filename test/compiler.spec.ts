@@ -1,7 +1,6 @@
-import {compileFunc, compilerVersion} from '../src/index';
+import {compileFunc, compilerVersion, SuccessResult, ErrorResult} from '../src/index';
 import fs from 'fs';
 import {Cell} from 'ton';
-import {ErrorResult, SuccessResult} from "../dist";
 
 describe('ton-compiler', () => {
     const walletCodeCellHash = Buffer.from("hA3nAz+xEJePYGrDyjJ+BXBcxSp9Y2xaAFLRgGntfDs=", 'base64');
