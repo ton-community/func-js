@@ -1,4 +1,4 @@
-# TON Func Contract Compiler
+# TON FunC compiler
 
 [![Version npm](https://img.shields.io/npm/v/@ton.org/func-js.svg?logo=npm)](https://www.npmjs.com/package/@ton.org/func-js)
 
