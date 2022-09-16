@@ -1,4 +1,5 @@
 ;; Simple wallet smart contract
+#include "stdlib.fc";
 
 () recv_internal(slice in_msg) impure {
   ;; do nothing for internal messages

@@ -3,16 +3,22 @@ const CompilerModule = require('./wasmlib/funcfiftlib.js');
 /*
  * CompilerConfig example:
  * {
+ *      // The main contract filename, wich contain necessary includes.
+ *      // If your project has no includes - do not provide this field.
+ *      entryPoint: "contract1",
+ *      // All sources from your project
  *      sources: {
  *          "stdlib.fc": "<stdlib code>",
  *          "contract1: "<contract1 code>",
  *          ...
  *      },
+ *      // FUNC compiler optimization level
  *      optLevel: number of <0-2> (recommend 2)
  * }
  *
  */
 export type CompilerConfig = {
+    entryPoint?: string;
     sources: { [filename: string]: string },
     optLevel: number
 };
@@ -49,14 +55,27 @@ export async function compilerVersion(): Promise<CompilerVersion> {
 export async function funcCompile(compileConfig: CompilerConfig): Promise<CompileResult> {
     let mod = await CompilerModule();
 
-    let sourcesArr: string[] = [];
-
     mod.FS.mkdir("/contracts");
 
+    let entryPointFound = false;
+    let sourcesArr: string[] = [];
     for (let fileName in compileConfig.sources) {
         let source = compileConfig.sources[fileName]
-        sourcesArr.push(`/contracts/${fileName}`);
+        if (!compileConfig.entryPoint) {
+            sourcesArr.push(`/contracts/${fileName}`);
+        }
+        else if (!entryPointFound && fileName === compileConfig.entryPoint) {
+            entryPointFound = true;
+            sourcesArr.push(`/contracts/${fileName}`);
+        }
         mod.FS.writeFile(`/contracts/${fileName}`, source);
+    }
+
+    if (compileConfig.entryPoint && !entryPointFound) {
+        return {
+            status: "error",
+            message: `Entry point ${compileConfig.entryPoint} wasn't found among sources.`
+        };
     }
 
     let configJson = JSON.stringify({
