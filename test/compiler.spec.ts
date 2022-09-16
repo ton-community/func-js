@@ -58,7 +58,7 @@ describe('ton-compiler', () => {
         expect(hash).toEqual(walletCodeCellHashBase64);
     });
 
-    it('should failed cause one of entry point has bot provided in sources', async () => {
+    it('should failed cause one of entry point has not provided in sources', async () => {
         let confObj = {
             optLevel: 2,
             entryPoints: ["stdlib.fc", "wallet-code.fc", "undefined.fc"],
