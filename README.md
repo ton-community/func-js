@@ -75,3 +75,6 @@ Note that all FunC source files contents used in your project should be passed t
 - stdlib.fc (if you use it)
 - all files included in entry points
 
+## License
+
+This package is released under the [MIT License](LICENSE).
