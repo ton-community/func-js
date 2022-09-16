@@ -17,7 +17,7 @@
         "build": "yarn wasm:pack && tsc && yarn copy:wasmlib",
         "test": "jest",
         "wasm:pack": "node ./scripts/pack_wasm.js",
-        "release": "rm -fr dist && jest && yarn build && yarn publish"
+        "release": "rm -fr dist && jest && yarn build && yarn publish --access public"
     },
     "dependencies": {},
     "devDependencies": {

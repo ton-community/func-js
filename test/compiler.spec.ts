@@ -1,124 +1,97 @@
-import * as TonCompiler from '../src/index';
+import {compileFunc, compilerVersion} from '../src/index';
 import fs from 'fs';
 import {Cell} from 'ton';
+import {ErrorResult, SuccessResult} from "../dist";
 
 describe('ton-compiler', () => {
+    const walletCodeCellHash = Buffer.from("hA3nAz+xEJePYGrDyjJ+BXBcxSp9Y2xaAFLRgGntfDs=", 'base64');
 
-    const walletCodeCellHashBase64 = "hA3nAz+xEJePYGrDyjJ+BXBcxSp9Y2xaAFLRgGntfDs=";
-
-    const compilerVersion = {
+    const compilerVersionExpected = {
         funcVersion: "0.2.0",
         funcFiftLibCommitHash: "4dc54cefc49250fd39dcbe6d764b4493870354dc",
         funcFiftLibCommitDate: "2022-09-15 00:53:02 +0700"
     }
 
     it('should return compiler version', async () => {
-
-        let version = await TonCompiler.compilerVersion();
-
-        expect(version).toEqual(compilerVersion);
-
+        let version = await compilerVersion();
+        expect(version).toEqual(compilerVersionExpected);
     });
 
-    it('should compile TON contracts writen on func without includes', async () => {
-        let confObj = {
+    it('should compile', async () => {
+        let result = await compileFunc({
             optLevel: 2,
             entryPoints: ["stdlib.fc", "wallet-code.fc"],
             sources: {
                 "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', { encoding: 'utf-8' }),
                 "wallet-code.fc":  fs.readFileSync('./test/contracts/wallet-code.fc', { encoding: 'utf-8' })
             }
-        };
-
-        let result = await TonCompiler.funcCompile(confObj);
+        });
 
         expect(result.status).toEqual('ok');
-
-        result = result as TonCompiler.SuccessResult;
+        result = result as SuccessResult;
 
         let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
-        let hash = codeCell.hash().toString('base64');
-        expect(hash).toEqual(walletCodeCellHashBase64);
+        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true)
     });
 
-    it('should compile TON contracts writen on func with includes', async () => {
-        let confObj = {
+    it('should handle includes', async () => {
+        let result = await compileFunc({
             optLevel: 2,
             entryPoints: ["wallet-code.fc"],
             sources: {
                 "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', { encoding: 'utf-8' }),
                 "wallet-code.fc":  fs.readFileSync('./test/contracts/wallet-code-with-include.fc', { encoding: 'utf-8' })
             }
-        };
-
-        let result = await TonCompiler.funcCompile(confObj);
+        });
 
         expect(result.status).toEqual('ok');
 
-        result = result as TonCompiler.SuccessResult;
+        result = result as SuccessResult;
 
         let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
-        let hash = codeCell.hash().toString('base64');
-        expect(hash).toEqual(walletCodeCellHashBase64);
+        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true)
     });
 
-    it('should failed cause one of entry point has not provided in sources', async () => {
-        let confObj = {
+    it('should fail if entry point source is not provided', async () => {
+        expect(compileFunc({
             optLevel: 2,
-            entryPoints: ["stdlib.fc", "wallet-code.fc", "undefined.fc"],
+            entryPoints: ["main.fc"],
             sources: {
-                "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', { encoding: 'utf-8' }),
-                "wallet-code.fc":  fs.readFileSync('./test/contracts/wallet-code.fc', { encoding: 'utf-8' })
             }
-        };
-
-        let result = await TonCompiler.funcCompile(confObj);
-
-
-        expect(result.status).toEqual('error');
-
-        result = result as TonCompiler.ErrorResult;
-
-        expect(result.message).toEqual("The entry point undefined.fc has not provided in sources.");
+        })).rejects.toThrowError('The entry point main.fc has not provided in sources.');
     });
 
-    it('should successed compile contract with pragma version ^0.2.0', async () =>{
-        let confObj = {
-            optLevel: 2,
-            entryPoints: ["wallet-code.fc"],
+    it('should handle pragma', async () => {
+        let source = `
+            #pragma version ^${compilerVersionExpected.funcVersion};
+            
+            () main() { return(); }
+        `
+        let result = await compileFunc({
+            optLevel: 1,
+            entryPoints: ["main.fc"],
             sources: {
-                "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', { encoding: 'utf-8' }),
-                "wallet-code.fc":  fs.readFileSync('./test/contracts/wallet-code-with-pragma.fc', { encoding: 'utf-8' })
+                "main.fc": source,
             }
-        };
+        });
 
-        let result = await TonCompiler.funcCompile(confObj);
+        expect(result.status).toEqual('ok')
 
-        expect(result.status).toEqual('ok');
-
-        result = result as TonCompiler.SuccessResult;
-
-        let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
-        let hash = codeCell.hash().toString('base64');
-        expect(hash).toEqual(walletCodeCellHashBase64);
-    });
-
-    it('should failed to compile contract with pragma version <0.2.0', async () =>{
-        let confObj = {
-            optLevel: 2,
-            entryPoints: ["wallet-code.fc"],
+        source = `
+            #pragma version <${compilerVersionExpected.funcVersion};
+            
+            () main() { return(); }
+        `
+        result = await compileFunc({
+            optLevel: 1,
+            entryPoints: ["main.fc"],
             sources: {
-                "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', { encoding: 'utf-8' }),
-                "wallet-code.fc":  fs.readFileSync('./test/contracts/wallet-code-with-bad-pragma.fc', { encoding: 'utf-8' })
+                "main.fc": source,
             }
-        };
+        });
 
-        let result = await TonCompiler.funcCompile(confObj);
-
-        expect(result.status).toEqual('error');
-
-        result = result as TonCompiler.ErrorResult;
-
-        expect(result.message.indexOf(`FunC version ${compilerVersion.funcVersion} does not satisfy condition <0.2.0`) != undefined);
-    });
+        expect(result.status).toEqual('error')
+        result = result as ErrorResult;
+        expect(result.message.indexOf(`FunC version ${compilerVersionExpected.funcVersion} does not satisfy condition <0.2.0`) != undefined);
+    })
 });

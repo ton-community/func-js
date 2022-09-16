@@ -11,7 +11,7 @@ const WasmBinary = base64Decode(FuncFiftLibWasm)
  * {
  *      // Entry points of your project.
  *      // If your project has no includes you should provide all files to this array.
- *      // Else provide only main contract with all neccessary includes.
+ *      // Else provide only main contract with all necessary includes.
  *      entryPoints: ["stdlib.fc", "contract1", ...],
  *      // All sources from your project
  *      sources: {
@@ -19,15 +19,17 @@ const WasmBinary = base64Decode(FuncFiftLibWasm)
  *          "contract1": "<contract1 code>",
  *          ...
  *      },
- *      // FUNC compiler optimization level
- *      optLevel: number of <0-2> (recommend 2)
+ *      // FunC compiler optimization level
+ *      optLevel: number of <0-2> (default is 2)
  * }
  *
  */
+export type SourcesMap = { [filename: string]: string }
+
 export type CompilerConfig = {
     entryPoints: string[],
-    sources: { [filename: string]: string },
-    optLevel: number
+    sources: SourcesMap,
+    optLevel?: number
 };
 
 export type SuccessResult = {
@@ -59,44 +61,36 @@ export async function compilerVersion(): Promise<CompilerVersion> {
     return JSON.parse(versionJson);
 }
 
-export async function funcCompile(compileConfig: CompilerConfig): Promise<CompileResult> {
+export async function compileFunc(compileConfig: CompilerConfig): Promise<CompileResult> {
 
-    for (let point of compileConfig.entryPoints) {
-        let src = compileConfig.sources[point];
-        if (!src) {
-            return {
-                status: "error",
-                message: `The entry point ${point} has not provided in sources.`
-            };
-        }
+    let entryWithNoSource = compileConfig.entryPoints.find(filename => typeof compileConfig.sources[filename] !== 'string')
+    if (entryWithNoSource) {
+        throw new Error(`The entry point ${entryWithNoSource} has not provided in sources.`)
     }
 
     let mod = await CompilerModule({ wasmBinary: WasmBinary });
-    mod.FS.mkdir("/contracts");
 
+    // Write sources to virtual FS
     for (let fileName in compileConfig.sources) {
         let source = compileConfig.sources[fileName];
-        mod.FS.writeFile(`/contracts/${fileName}`, source);
+        mod.FS.writeFile(fileName, source);
     }
 
-    let configJson = JSON.stringify({
-        sources: compileConfig.entryPoints.map((value) => {
-            value = `/contracts/${value}`;
-            return value;
-        }),
-        optLevel: compileConfig.optLevel
+    let configStr = JSON.stringify({
+        sources: compileConfig.entryPoints,
+        optLevel: compileConfig.optLevel || 2
     });
 
-    let configJsonPointer = mod._malloc(configJson.length + 1);
-    mod.stringToUTF8(configJson, configJsonPointer, configJson.length + 1);
+    let configStrPointer = mod._malloc(configStr.length + 1);
+    mod.stringToUTF8(configStr, configStrPointer, configStr.length + 1);
 
-    let resultPointer = mod._func_compile(configJsonPointer);
-
-    mod._free(configJsonPointer);
-
+    let resultPointer = mod._func_compile(configStrPointer);
     let retJson = mod.UTF8ToString(resultPointer);
 
+    // Cleanup
     mod._free(resultPointer);
+    mod._free(configStrPointer);
+    mod = null
 
     return JSON.parse(retJson);
 }
