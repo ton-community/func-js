@@ -54,18 +54,28 @@ export async function compilerVersion(): Promise<CompilerVersion> {
 }
 
 export async function funcCompile(compileConfig: CompilerConfig): Promise<CompileResult> {
-    let mod = await CompilerModule();
 
+    for (let point of compileConfig.entryPoints) {
+        let src = compileConfig.sources[point];
+        if (!src) {
+            return {
+                status: "error",
+                message: `The entry point ${point} has not provided in sources.`
+            };
+        }
+    }
+
+    let mod = await CompilerModule();
     mod.FS.mkdir("/contracts");
 
     for (let fileName in compileConfig.sources) {
-        let source = compileConfig.sources[fileName]
+        let source = compileConfig.sources[fileName];
         mod.FS.writeFile(`/contracts/${fileName}`, source);
     }
 
     let configJson = JSON.stringify({
         sources: compileConfig.entryPoints.map((value) => {
-            value = `/contracts/${value}`
+            value = `/contracts/${value}`;
             return value;
         }),
         optLevel: compileConfig.optLevel

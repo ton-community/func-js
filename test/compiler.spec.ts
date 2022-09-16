@@ -57,4 +57,24 @@ describe('ton-compiler', () => {
         let hash = codeCell.hash().toString('base64');
         expect(hash).toEqual(walletCodeCellHashBase64);
     });
+
+    it('should failed cause one of entry point has bot provided in sources', async () => {
+        let confObj = {
+            optLevel: 2,
+            entryPoints: ["stdlib.fc", "wallet-code.fc", "undefined.fc"],
+            sources: {
+                "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', { encoding: 'utf-8' }),
+                "wallet-code.fc":  fs.readFileSync('./test/contracts/wallet-code.fc', { encoding: 'utf-8' })
+            }
+        };
+
+        let result = await TonCompiler.funcCompile(confObj);
+
+
+        expect(result.status).toEqual('error');
+
+        result = result as TonCompiler.ErrorResult;
+
+        expect(result.message).toEqual("The entry point undefined.fc has not provided in sources.");
+    });
 });
