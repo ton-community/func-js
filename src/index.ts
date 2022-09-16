@@ -3,16 +3,23 @@ const CompilerModule = require('./wasmlib/funcfiftlib.js');
 /*
  * CompilerConfig example:
  * {
+ *      // Entry points of your project.
+ *      // If your project has no includes you should provide all files to this array.
+ *      // Else provide only main contract with all neccessary includes.
+ *      entryPoints: ["stdlib.fc", "contract1", ...],
+ *      // All sources from your project
  *      sources: {
  *          "stdlib.fc": "<stdlib code>",
- *          "contract1: "<contract1 code>",
+ *          "contract1": "<contract1 code>",
  *          ...
  *      },
+ *      // FUNC compiler optimization level
  *      optLevel: number of <0-2> (recommend 2)
  * }
  *
  */
 export type CompilerConfig = {
+    entryPoints: string[],
     sources: { [filename: string]: string },
     optLevel: number
 };
@@ -49,18 +56,18 @@ export async function compilerVersion(): Promise<CompilerVersion> {
 export async function funcCompile(compileConfig: CompilerConfig): Promise<CompileResult> {
     let mod = await CompilerModule();
 
-    let sourcesArr: string[] = [];
-
     mod.FS.mkdir("/contracts");
 
     for (let fileName in compileConfig.sources) {
         let source = compileConfig.sources[fileName]
-        sourcesArr.push(`/contracts/${fileName}`);
         mod.FS.writeFile(`/contracts/${fileName}`, source);
     }
 
     let configJson = JSON.stringify({
-        sources: sourcesArr,
+        sources: compileConfig.entryPoints.map((value) => {
+            value = `/contracts/${value}`
+            return value;
+        }),
         optLevel: compileConfig.optLevel
     });
 
