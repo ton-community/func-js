@@ -35,7 +35,8 @@ export type CompilerConfig = {
 export type SuccessResult = {
     status: "ok",
     codeBoc: string,
-    fiftCode: string
+    fiftCode: string,
+    warnings: string
 };
 
 export type ErrorResult = {

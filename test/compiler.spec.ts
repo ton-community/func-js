@@ -7,8 +7,8 @@ describe('ton-compiler', () => {
 
     const compilerVersionExpected = {
         funcVersion: "0.2.0",
-        funcFiftLibCommitHash: "4dc54cefc49250fd39dcbe6d764b4493870354dc",
-        funcFiftLibCommitDate: "2022-09-15 00:53:02 +0700"
+        funcFiftLibCommitHash: "2cbca16527b36a9e96f86f414699c2fe6346b64c",
+        funcFiftLibCommitDate: "2022-09-19 15:07:14 +0700"
     }
 
     it('should return compiler version', async () => {
