@@ -1,10 +1,5 @@
-import {base64Decode} from "./utils";
-
 const CompilerModule = require('./wasmlib/funcfiftlib.js');
 const {FuncFiftLibWasm} = require('./wasmlib/funcfiftlib.wasm.js')
-
-// Prepare binary
-const WasmBinary = base64Decode(FuncFiftLibWasm)
 
 /*
  * CompilerConfig example:
@@ -53,7 +48,7 @@ export type CompilerVersion = {
 }
 
 export async function compilerVersion(): Promise<CompilerVersion> {
-    let mod = await CompilerModule({ wasmBinary: WasmBinary });
+    let mod = await CompilerModule({ wasmBinary: FuncFiftLibWasm });
 
     let versionJsonPointer = mod._version();
     let versionJson = mod.UTF8ToString(versionJsonPointer);
@@ -69,7 +64,7 @@ export async function compileFunc(compileConfig: CompilerConfig): Promise<Compil
         throw new Error(`The entry point ${entryWithNoSource} has not provided in sources.`)
     }
 
-    let mod = await CompilerModule({ wasmBinary: WasmBinary });
+    let mod = await CompilerModule({ wasmBinary: FuncFiftLibWasm });
 
     // Write sources to virtual FS
     for (let fileName in compileConfig.sources) {
