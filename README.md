@@ -38,25 +38,24 @@ npm i @ton.org/func-js
 ## Usage example
 
 ```typescript
-import {compileFunc, compilerVersion} from 'ton-compiler';
+import {compileFunc, compilerVersion} from '@ton.org/func-js';
 import {Cell} from 'ton';
+import {readFileSync} from "fs";
 
 
 async function main() {
     // You can get compiler version 
     let version = await compilerVersion();
     
-    let result = await funcCompile({
+    let result = await compileFunc({
         // Entry points of your project
-        entryPoints: ['main.fc'],
-        // Sources
+        entryPoints: ["stdlib.fc", "wallet-code.fc"],
         sources: {
-            "stdlib.fc": "<stdlibCode>",
-            "main.fc": "<contractCode>",
-            // Rest of the files which are included in main.fc if some
+            "stdlib.fc": readFileSync('./stdlib.fc', { encoding: 'utf-8' }),
+            "wallet-code.fc":  readFileSync('./wallet-code.fc', { encoding: 'utf-8' })
         }
     });
-
+    
     if (result.status === 'error') {
         console.error(result.message)
         return;
@@ -66,7 +65,7 @@ async function main() {
     let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
     
     // result.fiftCode contains assembly version of your code (for debug purposes)
-    console.log(result.fiftCode)
+    console.log(codeCell)
 }
 ```
 
