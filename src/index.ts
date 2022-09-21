@@ -1,5 +1,8 @@
 const CompilerModule = require('./wasmlib/funcfiftlib.js');
 const {FuncFiftLibWasm} = require('./wasmlib/funcfiftlib.wasm.js')
+import { glob } from "glob";
+import { readFileSync } from 'fs';
+import { basename } from 'path';
 
 /*
  * CompilerConfig example:
@@ -14,6 +17,9 @@ const {FuncFiftLibWasm} = require('./wasmlib/funcfiftlib.wasm.js')
  *          "contract1": "<contract1 code>",
  *          ...
  *      },
+ *      // cwdPattern is a glob pattern to find all sources in your project.
+ *      // If you provide this parameter, sources will be ignored.
+ *      cwdPattern: './test/contracts/**
  *      // FunC compiler optimization level
  *      optLevel: number of <0-2> (default is 2)
  * }
@@ -23,7 +29,8 @@ export type SourcesMap = { [filename: string]: string }
 
 export type CompilerConfig = {
     entryPoints: string[],
-    sources: SourcesMap,
+    sources?: SourcesMap,
+    cwdPattern?: string,
     optLevel?: number
 };
 
@@ -57,18 +64,39 @@ export async function compilerVersion(): Promise<CompilerVersion> {
     return JSON.parse(versionJson);
 }
 
-export async function compileFunc(compileConfig: CompilerConfig): Promise<CompileResult> {
 
-    let entryWithNoSource = compileConfig.entryPoints.find(filename => typeof compileConfig.sources[filename] !== 'string')
+function cwdToSourcesMap(cwd: string): SourcesMap {
+    let files = glob.sync(cwd);
+
+    let result: SourcesMap = {};
+
+    for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const filename = basename(file);
+        result[filename] = readFileSync(file, { encoding: "utf-8" });
+    }
+
+    return result;
+}
+
+export async function compileFunc(compileConfig: CompilerConfig): Promise<CompileResult> {
+    let sources: SourcesMap = {};
+    if(compileConfig.cwdPattern) {
+        sources = cwdToSourcesMap(compileConfig.cwdPattern);
+    } else if(compileConfig.sources) {
+        sources = compileConfig.sources;
+    }
+
+    let entryWithNoSource = compileConfig.entryPoints.find( filename => typeof sources[filename] !== "string");
     if (entryWithNoSource) {
-        throw new Error(`The entry point ${entryWithNoSource} has not provided in sources.`)
+        throw new Error(`The entry point ${entryWithNoSource} has not provided in sources.`);
     }
 
     let mod = await CompilerModule({ wasmBinary: FuncFiftLibWasm });
 
     // Write sources to virtual FS
-    for (let fileName in compileConfig.sources) {
-        let source = compileConfig.sources[fileName];
+    for (let fileName in sources) {
+        let source = sources[fileName];
         mod.FS.writeFile(fileName, source);
     }
 
@@ -86,7 +114,7 @@ export async function compileFunc(compileConfig: CompilerConfig): Promise<Compil
     // Cleanup
     mod._free(resultPointer);
     mod._free(configStrPointer);
-    mod = null
+    mod = null;
 
     return JSON.parse(retJson);
 }

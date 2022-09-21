@@ -18,12 +18,15 @@
         "test": "jest",
         "release": "rm -fr dist && jest && yarn build && yarn publish --access public"
     },
-    "dependencies": {},
+    "dependencies": {
+        "glob": "^8.0.3"
+    },
     "devDependencies": {
+        "@types/glob": "^8.0.0",
         "@types/jest": "^24.0.23",
         "jest": "^26.4.2",
+        "ton": "^11.18.2",
         "ts-jest": "^26.4.0",
-        "typescript": "^3.7.2",
-        "ton": "^11.18.2"
+        "typescript": "^3.7.2"
     }
 }

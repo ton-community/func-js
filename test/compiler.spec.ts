@@ -30,7 +30,7 @@ describe('ton-compiler', () => {
         result = result as SuccessResult;
 
         let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
-        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true)
+        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true);
     });
 
     it('should handle includes', async () => {
@@ -48,49 +48,66 @@ describe('ton-compiler', () => {
         result = result as SuccessResult;
 
         let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
-        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true)
+        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true);
+    });
+
+    it('should handle includes using cwd pattern', async () => {
+        let result = await compileFunc({
+            optLevel: 2,
+            entryPoints: ["wallet-code-with-include.fc"],
+            cwdPattern: "./test/contracts/**/*.fc",
+        });
+
+        expect(result.status).toEqual('ok');
+
+        result = result as SuccessResult;
+
+        let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
+        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true);
     });
 
     it('should fail if entry point source is not provided', async () => {
-        expect(compileFunc({
-            optLevel: 2,
-            entryPoints: ["main.fc"],
-            sources: {
-            }
-        })).rejects.toThrowError('The entry point main.fc has not provided in sources.');
+        expect(
+            compileFunc({
+                optLevel: 2,
+                entryPoints: ["main.fc"],
+                sources: {
+                }
+            })
+        ).rejects.toThrowError("The entry point main.fc has not provided in sources.");
     });
 
     it('should handle pragma', async () => {
         let source = `
             #pragma version ^${compilerVersionExpected.funcVersion};
-            
+
             () main() { return(); }
-        `
+        `;
         let result = await compileFunc({
             optLevel: 1,
             entryPoints: ["main.fc"],
             sources: {
                 "main.fc": source,
-            }
+            },
         });
 
-        expect(result.status).toEqual('ok')
+        expect(result.status).toEqual('ok');
 
         source = `
             #pragma version <${compilerVersionExpected.funcVersion};
-            
+
             () main() { return(); }
-        `
+        `;
         result = await compileFunc({
             optLevel: 1,
             entryPoints: ["main.fc"],
             sources: {
                 "main.fc": source,
-            }
+            },
         });
 
-        expect(result.status).toEqual('error')
+        expect(result.status).toEqual('error');
         result = result as ErrorResult;
         expect(result.message.indexOf(`FunC version ${compilerVersionExpected.funcVersion} does not satisfy condition <0.2.0`) != undefined);
-    })
+    });
 });
