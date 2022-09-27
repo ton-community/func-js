@@ -1,6 +1,6 @@
 # TON FunC compiler
 
-[![Version npm](https://img.shields.io/npm/v/@ton.org/func-js.svg?logo=npm)](https://www.npmjs.com/package/@ton.org/func-js)
+[![Version npm](https://img.shields.io/npm/v/@ton-community/func-js/func-js.svg?logo=npm)](https://www.npmjs.com/package/@ton.org/func-js)
 
 Cross-platform bindings for TON FunC compiler.
 

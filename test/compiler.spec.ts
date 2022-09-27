@@ -26,6 +26,8 @@ describe('ton-compiler', () => {
             }
         });
 
+
+
         expect(result.status).toEqual('ok');
         result = result as SuccessResult;
 
