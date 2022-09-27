@@ -7,8 +7,8 @@ describe('ton-compiler', () => {
 
     const compilerVersionExpected = {
         funcVersion: "0.2.0",
-        funcFiftLibCommitHash: "4dc54cefc49250fd39dcbe6d764b4493870354dc",
-        funcFiftLibCommitDate: "2022-09-15 00:53:02 +0700"
+        funcFiftLibCommitHash: "a18a5ed15c8c5a149d48a7d8b0523f13b76f5123",
+        funcFiftLibCommitDate: "2022-09-21 14:11:40 +0700"
     }
 
     it('should return compiler version', async () => {
@@ -38,8 +38,8 @@ describe('ton-compiler', () => {
             optLevel: 2,
             entryPoints: ["wallet-code.fc"],
             sources: {
-                "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', { encoding: 'utf-8' }),
-                "wallet-code.fc":  fs.readFileSync('./test/contracts/wallet-code-with-include.fc', { encoding: 'utf-8' })
+                "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', 'utf-8'),
+                "wallet-code.fc": '#include "stdlib.fc";\n' + fs.readFileSync('./test/contracts/wallet-code.fc', 'utf-8')
             }
         });
 
