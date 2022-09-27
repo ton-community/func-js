@@ -1,19 +1,26 @@
+import {base64Decode} from "./utils";
+
 const CompilerModule = require('./wasmlib/funcfiftlib.js');
 const {FuncFiftLibWasm} = require('./wasmlib/funcfiftlib.wasm.js')
+
+// Prepare binary
+const WasmBinary = base64Decode(FuncFiftLibWasm)
 
 /*
  * CompilerConfig example:
  * {
  *      // Entry points of your project.
  *      // If your project has no includes you should provide all files to this array.
- *      // Else provide only main contract with all necessary includes.
- *      entryPoints: ["stdlib.fc", "contract1", ...],
- *      // All sources from your project
+ *      // Else provide only main entry with all necessary includes.
+ *      entryPoints: ["stdlib.fc", "main.fc", ...],
+ *
+ *      // All .fc source files from your project
  *      sources: {
  *          "stdlib.fc": "<stdlib code>",
  *          "contract1": "<contract1 code>",
  *          ...
  *      },
+ *
  *      // FunC compiler optimization level
  *      optLevel: number of <0-2> (default is 2)
  * }
@@ -48,7 +55,7 @@ export type CompilerVersion = {
 }
 
 export async function compilerVersion(): Promise<CompilerVersion> {
-    let mod = await CompilerModule({ wasmBinary: FuncFiftLibWasm });
+    let mod = await CompilerModule({ wasmBinary: WasmBinary });
 
     let versionJsonPointer = mod._version();
     let versionJson = mod.UTF8ToString(versionJsonPointer);
@@ -64,7 +71,7 @@ export async function compileFunc(compileConfig: CompilerConfig): Promise<Compil
         throw new Error(`The entry point ${entryWithNoSource} has not provided in sources.`)
     }
 
-    let mod = await CompilerModule({ wasmBinary: FuncFiftLibWasm });
+    let mod = await CompilerModule({ wasmBinary: WasmBinary });
 
     // Write sources to virtual FS
     for (let fileName in compileConfig.sources) {
