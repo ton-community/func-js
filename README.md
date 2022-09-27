@@ -26,27 +26,26 @@ Sources for the internal lib could be found [here](https://github.com/ton-blockc
 ## Install
 
 ```bash
-yarn add @ton.org/func-js
+yarn add @ton-community/func-js
 ```
 
 or 
 
 ```bash
-npm i @ton.org/func-js
+npm i @ton-community/func-js
 ```
 
 ## Usage example
 
 ```typescript
-import {compileFunc, compilerVersion} from 'ton-compiler';
+import {compileFunc, compilerVersion} from '@ton-community/func-js';
 import {Cell} from 'ton';
-
 
 async function main() {
     // You can get compiler version 
     let version = await compilerVersion();
     
-    let result = await funcCompile({
+    let result = await compileFunc({
         // Entry points of your project
         entryPoints: ['main.fc'],
         // Sources
