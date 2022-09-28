@@ -1,5 +1,6 @@
 # TON FunC compiler
 
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](https://makeapullrequest.com)
 [![Version npm](https://img.shields.io/npm/v/@ton-community/func-js.svg?logo=npm)](https://www.npmjs.com/package/@ton-community/func-js)
 
 Cross-platform bindings for TON FunC compiler.
