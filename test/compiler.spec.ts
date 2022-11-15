@@ -1,4 +1,4 @@
-import {compileFunc, compilerVersion, SuccessResult, ErrorResult} from '../src/index';
+import {compileFunc, compilerVersion, SuccessResult, ErrorResult, mapSourceResolver} from '../src/index';
 import fs from 'fs';
 import {Cell} from 'ton';
 
@@ -6,10 +6,10 @@ describe('ton-compiler', () => {
     const walletCodeCellHash = Buffer.from("hA3nAz+xEJePYGrDyjJ+BXBcxSp9Y2xaAFLRgGntfDs=", 'base64');
 
     const compilerVersionExpected = {
-        funcVersion: "0.2.0",
-        funcFiftLibCommitHash: "a18a5ed15c8c5a149d48a7d8b0523f13b76f5123",
-        funcFiftLibCommitDate: "2022-09-21 14:11:40 +0700"
-    }
+        funcVersion: "0.3.0",
+        funcFiftLibCommitHash: "3dd87ae7a703d2771c4e299a4490eb66787eb270",
+        funcFiftLibCommitDate: "2022-11-15 17:17:07 +0300"
+    };
 
     it('should return compiler version', async () => {
         let version = await compilerVersion();
@@ -26,13 +26,28 @@ describe('ton-compiler', () => {
             }
         });
 
+        expect(result.status).toEqual('ok');
+        result = result as SuccessResult;
 
+        let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
+        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true);
+    });
+
+    it('should compile using map source resolver', async () => {
+        let result = await compileFunc({
+            optLevel: 2,
+            entryPoints: ["stdlib.fc", "wallet-code.fc"],
+            sources: mapSourceResolver({
+                "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', { encoding: 'utf-8' }),
+                "wallet-code.fc":  fs.readFileSync('./test/contracts/wallet-code.fc', { encoding: 'utf-8' })
+            })
+        });
 
         expect(result.status).toEqual('ok');
         result = result as SuccessResult;
 
         let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
-        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true)
+        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true);
     });
 
     it('should handle includes', async () => {
@@ -50,15 +65,14 @@ describe('ton-compiler', () => {
         result = result as SuccessResult;
 
         let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
-        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true)
+        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true);
     });
 
     it('should fail if entry point source is not provided', async () => {
         expect(compileFunc({
             optLevel: 2,
             entryPoints: ["main.fc"],
-            sources: {
-            }
+            sources: {}
         })).rejects.toThrowError('The entry point main.fc has not provided in sources.');
     });
 
@@ -67,7 +81,7 @@ describe('ton-compiler', () => {
             #pragma version ^${compilerVersionExpected.funcVersion};
             
             () main() { return(); }
-        `
+        `;
         let result = await compileFunc({
             optLevel: 1,
             entryPoints: ["main.fc"],
@@ -82,7 +96,7 @@ describe('ton-compiler', () => {
             #pragma version <${compilerVersionExpected.funcVersion};
             
             () main() { return(); }
-        `
+        `;
         result = await compileFunc({
             optLevel: 1,
             entryPoints: ["main.fc"],
@@ -91,8 +105,22 @@ describe('ton-compiler', () => {
             }
         });
 
-        expect(result.status).toEqual('error')
+        expect(result.status).toEqual('error');
         result = result as ErrorResult;
-        expect(result.message.indexOf(`FunC version ${compilerVersionExpected.funcVersion} does not satisfy condition <0.2.0`) != undefined);
-    })
+        expect(result.message.indexOf(`FunC version ${compilerVersionExpected.funcVersion} does not satisfy condition <${compilerVersionExpected.funcVersion}`) >= 0).toBeTruthy();
+    });
+
+    it('should fail if a non-existing source is included', async () => {
+        let result = await compileFunc({
+            optLevel: 2,
+            entryPoints: ["main.fc"],
+            sources: {
+                "main.fc": '#include "non-existing.fc";'
+            }
+        });
+
+        expect(result.status).toEqual('error');
+        result = result as ErrorResult;
+        expect(result.message.indexOf('Cannot find source file non-existing.fc') >= 0).toBeTruthy();
+    });
 });

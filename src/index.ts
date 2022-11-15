@@ -6,6 +6,19 @@ const {FuncFiftLibWasm} = require('./wasmlib/funcfiftlib.wasm.js')
 // Prepare binary
 const WasmBinary = base64Decode(FuncFiftLibWasm)
 
+export type SourcesMap = { [filename: string]: string }
+
+export type SourceResolver = (path: string) => string;
+
+export const mapSourceResolver = (map: SourcesMap): SourceResolver => {
+    return (path: string) => {
+        if (path in map) {
+            return map[path];
+        }
+        throw new Error('Cannot find source file ' + path);
+    };
+};
+
 /*
  * CompilerConfig example:
  * {
@@ -26,11 +39,9 @@ const WasmBinary = base64Decode(FuncFiftLibWasm)
  * }
  *
  */
-export type SourcesMap = { [filename: string]: string }
-
 export type CompilerConfig = {
     entryPoints: string[],
-    sources: SourcesMap,
+    sources: SourcesMap | SourceResolver,
     optLevel?: number
 };
 
@@ -54,46 +65,85 @@ export type CompilerVersion = {
     funcFiftLibCommitDate: string
 }
 
-export async function compilerVersion(): Promise<CompilerVersion> {
-    let mod = await CompilerModule({ wasmBinary: WasmBinary });
+const copyToCString = (mod: any, str: string) => {
+    const len = mod.lengthBytesUTF8(str) + 1;
+    const ptr = mod._malloc(len);
+    mod.stringToUTF8(str, ptr, len);
+    return ptr;
+}
 
-    let versionJsonPointer = mod._version();
-    let versionJson = mod.UTF8ToString(versionJsonPointer);
+const copyToCStringPtr = (mod: any, str: string, ptr: any) => {
+    const allocated = copyToCString(mod, str);
+    mod.setValue(ptr, allocated, '*');
+    return allocated;
+};
+
+const copyFromCString = (mod: any, ptr: any) => {
+    return mod.UTF8ToString(ptr);
+};
+
+export async function compilerVersion(): Promise<CompilerVersion> {
+    const mod = await CompilerModule({ wasmBinary: WasmBinary });
+
+    const versionJsonPointer = mod._version();
+    const versionJson = copyFromCString(mod, versionJsonPointer);
     mod._free(versionJsonPointer);
 
     return JSON.parse(versionJson);
 }
 
 export async function compileFunc(compileConfig: CompilerConfig): Promise<CompileResult> {
+    const resolver = typeof compileConfig.sources === 'function' ? compileConfig.sources : mapSourceResolver(compileConfig.sources);
 
-    let entryWithNoSource = compileConfig.entryPoints.find(filename => typeof compileConfig.sources[filename] !== 'string')
+    const entryWithNoSource = compileConfig.entryPoints.find(filename => {
+        try {
+            resolver(filename);
+            return false;
+        } catch (e) {
+            return true;
+        }
+    });
     if (entryWithNoSource) {
         throw new Error(`The entry point ${entryWithNoSource} has not provided in sources.`)
     }
 
-    let mod = await CompilerModule({ wasmBinary: WasmBinary });
+    const mod = await CompilerModule({ wasmBinary: WasmBinary });
 
-    // Write sources to virtual FS
-    for (let fileName in compileConfig.sources) {
-        let source = compileConfig.sources[fileName];
-        mod.FS.writeFile(fileName, source);
-    }
+    const allocatedPointers = [];
 
-    let configStr = JSON.stringify({
+    const callbackPtr = mod.addFunction((_kind: any, _data: any, contents: any, error: any) => {
+        const kind: string = copyFromCString(mod, _kind);
+        const data: string = copyFromCString(mod, _data);
+        if (kind === 'realpath') {
+            allocatedPointers.push(copyToCStringPtr(mod, data, contents));
+        } else if (kind === 'source') {
+            try {
+                const source = resolver(data);
+                allocatedPointers.push(copyToCStringPtr(mod, source, contents));
+            } catch (err) {
+                const e = err as any;
+                allocatedPointers.push(copyToCStringPtr(mod, 'message' in e ? e.message : e.toString(), error));
+            }
+        } else {
+            allocatedPointers.push(copyToCStringPtr(mod, 'Unknown callback kind ' + kind, error));
+        }
+    }, 'viiii');
+
+    const configStr = JSON.stringify({
         sources: compileConfig.entryPoints,
         optLevel: compileConfig.optLevel || 2
     });
 
-    let configStrPointer = mod._malloc(configStr.length + 1);
-    mod.stringToUTF8(configStr, configStrPointer, configStr.length + 1);
+    const configStrPointer = copyToCString(mod, configStr);
+    allocatedPointers.push(configStrPointer);
 
-    let resultPointer = mod._func_compile(configStrPointer);
-    let retJson = mod.UTF8ToString(resultPointer);
+    const resultPointer = mod._func_compile(configStrPointer, callbackPtr);
+    allocatedPointers.push(resultPointer);
+    const retJson = copyFromCString(mod, resultPointer);
 
     // Cleanup
-    mod._free(resultPointer);
-    mod._free(configStrPointer);
-    mod = null
+    allocatedPointers.forEach(ptr => mod._free(ptr));
+    mod.removeFunction(callbackPtr);
 
     return JSON.parse(retJson);
 }
