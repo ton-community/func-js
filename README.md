@@ -70,7 +70,21 @@ async function main() {
 }
 ```
 
-Note that all FunC source files contents used in your project should be passed to ```sources```, including:
+You can also pass a resolver (a function of type `(path: string) => string`) into `sources` instead of a source map object, for example if `main.fc` and all contracts used by it (such as `stdlib.fc`) are located in the same directory as the compiling file, you can use the following:
+```typescript
+import { readFileSync } from "fs";
+import { compileFunc } from "@ton-community/func-js";
+
+let result = await compileFunc({
+    // Entry points of your project
+    entryPoints: ['main.fc'],
+    // Sources
+    sources: (path) => readFileSync(__dirname + '/' + path).toString()
+});
+```
+And the resolver will be called for each required source file (including the entrypoints) using the same name as in the `#include` statement. Note however that the resolver must be synchronous and must return a string; if you need the resolver to get files from the network, you can repeatedly run the compiler with the known sources, check if the compilation failed, download the required sources and rerun the compiler until compilation succeeds.
+
+Note that all FunC source files contents used in your project should be passed to `sources` (if it is a source map) or be resolvable by it (if it is a resolver), including:
 - entry points
 - stdlib.fc (if you use it)
 - all files included in entry points
