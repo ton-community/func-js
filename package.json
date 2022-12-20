@@ -1,13 +1,13 @@
 {
     "name": "@ton-community/func-js",
-    "version": "0.2.1",
+    "version": "0.3.0",
     "description": "The TON FunC smart-contract compiler",
     "main": "dist/index.js",
     "author": "TonTech",
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/the-ton-tech/ton-compiler.git"
+        "url": "git+https://github.com/ton-community/func-js.git"
     },
     "files": [
         "dist/**/*"

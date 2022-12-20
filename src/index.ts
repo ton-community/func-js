@@ -1,22 +1,46 @@
-import {base64Decode} from "./utils";
+import { normalize } from "./path";
+import { base64Decode } from "./utils";
 
 const CompilerModule = require('./wasmlib/funcfiftlib.js');
-const {FuncFiftLibWasm} = require('./wasmlib/funcfiftlib.wasm.js')
+const {FuncFiftLibWasm} = require('./wasmlib/funcfiftlib.wasm.js');
 
 // Prepare binary
-const WasmBinary = base64Decode(FuncFiftLibWasm)
+const WasmBinary = base64Decode(FuncFiftLibWasm);
 
-export type SourcesMap = { [filename: string]: string }
+export type SourcesMap = { [filename: string]: string };
+
+export type SourceEntry = {
+    filename: string
+    content: string
+};
+
+export type SourcesArray = SourceEntry[];
 
 export type SourceResolver = (path: string) => string;
+
+export type Sources = SourcesMap | SourcesArray | SourceResolver;
 
 export const mapSourceResolver = (map: SourcesMap): SourceResolver => {
     return (path: string) => {
         if (path in map) {
             return map[path];
         }
-        throw new Error('Cannot find source file ' + path);
+        throw new Error(`Cannot find source file \`${path}\``);
     };
+};
+
+export const arraySourceResolver = (arr: SourcesArray): SourceResolver => {
+    return (path: string) => {
+        const entry = arr.find(e => e.filename === path);
+        if (entry === undefined) throw new Error(`Cannot find source file \`${path}\``);
+        return entry.content;
+    };
+};
+
+export const sourcesResolver = (sources: Sources): SourceResolver => {
+    if (typeof sources === 'function') return sources;
+    if (Array.isArray(sources)) return arraySourceResolver(sources);
+    return mapSourceResolver(sources);
 };
 
 /*
@@ -40,28 +64,34 @@ export const mapSourceResolver = (map: SourcesMap): SourceResolver => {
  *
  */
 export type CompilerConfig = {
-    entryPoints: string[],
-    sources: SourcesMap | SourceResolver,
     optLevel?: number
-};
+} & ({
+    targets: string[]
+    sources: SourceResolver | SourcesMap
+} | {
+    targets?: string[]
+    sources: SourcesArray
+});
 
 export type SuccessResult = {
-    status: "ok",
-    codeBoc: string,
-    fiftCode: string,
+    status: "ok"
+    codeBoc: string
+    fiftCode: string
     warnings: string
+    snapshot: SourcesArray
 };
 
 export type ErrorResult = {
-    status: "error",
+    status: "error"
     message: string
+    snapshot: SourcesArray
 };
 
 export type CompileResult = SuccessResult | ErrorResult;
 
 export type CompilerVersion = {
-    funcVersion: string,
-    funcFiftLibCommitHash: string,
+    funcVersion: string
+    funcFiftLibCommitHash: string
     funcFiftLibCommitDate: string
 }
 
@@ -93,9 +123,17 @@ export async function compilerVersion(): Promise<CompilerVersion> {
 }
 
 export async function compileFunc(compileConfig: CompilerConfig): Promise<CompileResult> {
-    const resolver = typeof compileConfig.sources === 'function' ? compileConfig.sources : mapSourceResolver(compileConfig.sources);
+    const resolver = sourcesResolver(compileConfig.sources);
 
-    const entryWithNoSource = compileConfig.entryPoints.find(filename => {
+    let targets = compileConfig.targets;
+    if (targets === undefined && Array.isArray(compileConfig.sources)) {
+        targets = compileConfig.sources.map(s => s.filename);
+    }
+    if (targets === undefined) {
+        throw new Error('`sources` is not an array and `targets` were not provided');
+    }
+
+    const entryWithNoSource = targets.find(filename => {
         try {
             resolver(filename);
             return false;
@@ -104,21 +142,28 @@ export async function compileFunc(compileConfig: CompilerConfig): Promise<Compil
         }
     });
     if (entryWithNoSource) {
-        throw new Error(`The entry point ${entryWithNoSource} has not provided in sources.`)
+        throw new Error(`The entry point \`${entryWithNoSource}\` was not provided in sources.`)
     }
 
     const mod = await CompilerModule({ wasmBinary: WasmBinary });
 
     const allocatedPointers = [];
 
+    const sourceMap: { [path: string]: { content: string, included: boolean } } = {};
+    const sourceOrder: string[] = [];
+
     const callbackPtr = mod.addFunction((_kind: any, _data: any, contents: any, error: any) => {
         const kind: string = copyFromCString(mod, _kind);
         const data: string = copyFromCString(mod, _data);
         if (kind === 'realpath') {
-            allocatedPointers.push(copyToCStringPtr(mod, data, contents));
+            const path = normalize(data);
+            allocatedPointers.push(copyToCStringPtr(mod, path, contents));
         } else if (kind === 'source') {
+            const path = normalize(data);
             try {
-                const source = resolver(data);
+                const source = resolver(path);
+                sourceMap[path] = { content: source, included: false };
+                sourceOrder.push(path);
                 allocatedPointers.push(copyToCStringPtr(mod, source, contents));
             } catch (err) {
                 const e = err as any;
@@ -130,8 +175,8 @@ export async function compileFunc(compileConfig: CompilerConfig): Promise<Compil
     }, 'viiii');
 
     const configStr = JSON.stringify({
-        sources: compileConfig.entryPoints,
-        optLevel: compileConfig.optLevel || 2
+        sources: targets,
+        optLevel: compileConfig.optLevel || 2,
     });
 
     const configStrPointer = copyToCString(mod, configStr);
@@ -145,5 +190,20 @@ export async function compileFunc(compileConfig: CompilerConfig): Promise<Compil
     allocatedPointers.forEach(ptr => mod._free(ptr));
     mod.removeFunction(callbackPtr);
 
-    return JSON.parse(retJson);
+    const snapshot: SourcesArray = [];
+    for (let i = sourceOrder.length - 1; i >= 0; i--) {
+        const path = sourceOrder[i];
+        if (sourceMap[path].included) continue;
+        snapshot.push({
+            filename: path,
+            content: sourceMap[path].content,
+        });
+    }
+
+    const ret = JSON.parse(retJson);
+
+    return {
+        ...ret,
+        snapshot,
+    };
 }

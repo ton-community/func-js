@@ -19,7 +19,7 @@ describe('ton-compiler', () => {
     it('should compile', async () => {
         let result = await compileFunc({
             optLevel: 2,
-            entryPoints: ["stdlib.fc", "wallet-code.fc"],
+            targets: ["stdlib.fc", "wallet-code.fc"],
             sources: {
                 "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', { encoding: 'utf-8' }),
                 "wallet-code.fc":  fs.readFileSync('./test/contracts/wallet-code.fc', { encoding: 'utf-8' })
@@ -36,7 +36,7 @@ describe('ton-compiler', () => {
     it('should compile using map source resolver', async () => {
         let result = await compileFunc({
             optLevel: 2,
-            entryPoints: ["stdlib.fc", "wallet-code.fc"],
+            targets: ["stdlib.fc", "wallet-code.fc"],
             sources: mapSourceResolver({
                 "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', { encoding: 'utf-8' }),
                 "wallet-code.fc":  fs.readFileSync('./test/contracts/wallet-code.fc', { encoding: 'utf-8' })
@@ -53,7 +53,7 @@ describe('ton-compiler', () => {
     it('should handle includes', async () => {
         let result = await compileFunc({
             optLevel: 2,
-            entryPoints: ["wallet-code.fc"],
+            targets: ["wallet-code.fc"],
             sources: {
                 "stdlib.fc": fs.readFileSync('./test/contracts/stdlib.fc', 'utf-8'),
                 "wallet-code.fc": '#include "stdlib.fc";\n' + fs.readFileSync('./test/contracts/wallet-code.fc', 'utf-8')
@@ -71,9 +71,9 @@ describe('ton-compiler', () => {
     it('should fail if entry point source is not provided', async () => {
         expect(compileFunc({
             optLevel: 2,
-            entryPoints: ["main.fc"],
+            targets: ["main.fc"],
             sources: {}
-        })).rejects.toThrowError('The entry point main.fc has not provided in sources.');
+        })).rejects.toThrowError('The entry point `main.fc` was not provided in sources.');
     });
 
     it('should handle pragma', async () => {
@@ -84,7 +84,7 @@ describe('ton-compiler', () => {
         `;
         let result = await compileFunc({
             optLevel: 1,
-            entryPoints: ["main.fc"],
+            targets: ["main.fc"],
             sources: {
                 "main.fc": source,
             }
@@ -99,7 +99,7 @@ describe('ton-compiler', () => {
         `;
         result = await compileFunc({
             optLevel: 1,
-            entryPoints: ["main.fc"],
+            targets: ["main.fc"],
             sources: {
                 "main.fc": source,
             }
@@ -113,7 +113,7 @@ describe('ton-compiler', () => {
     it('should fail if a non-existing source is included', async () => {
         let result = await compileFunc({
             optLevel: 2,
-            entryPoints: ["main.fc"],
+            targets: ["main.fc"],
             sources: {
                 "main.fc": '#include "non-existing.fc";'
             }
@@ -121,6 +121,44 @@ describe('ton-compiler', () => {
 
         expect(result.status).toEqual('error');
         result = result as ErrorResult;
-        expect(result.message.indexOf('Cannot find source file non-existing.fc') >= 0).toBeTruthy();
+        expect(result.message.indexOf('Cannot find source file `non-existing.fc`') >= 0).toBeTruthy();
     });
+
+    it('should return correct snapshot using resolver', async () => {
+        let result = await compileFunc({
+            targets: ["wallet-code.fc"],
+            sources: (path: string) => fs.readFileSync(__dirname + '/contracts/' + path).toString(),
+        });
+
+        expect(result.status).toBe('ok');
+        result = result as SuccessResult;
+
+        expect(result.snapshot).toStrictEqual([
+            {
+                filename: 'stdlib.fc',
+                content: fs.readFileSync(__dirname + '/contracts/stdlib.fc').toString(),
+            },
+            {
+                filename: 'wallet-code.fc',
+                content: fs.readFileSync(__dirname + '/contracts/wallet-code.fc').toString(),
+            },
+        ]);
+    })
+
+    it('should compile array sources', async () => {
+        let result = await compileFunc({
+            sources: [
+                {
+                    filename: 'stdlib.fc',
+                    content: fs.readFileSync(__dirname + '/contracts/stdlib.fc').toString(),
+                },
+                {
+                    filename: 'wallet-code.fc',
+                    content: fs.readFileSync(__dirname + '/contracts/wallet-code.fc').toString(),
+                },
+            ],
+        });
+
+        expect(result.status).toBe('ok');
+    })
 });
