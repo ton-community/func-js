@@ -13,18 +13,18 @@
         "dist/**/*"
     ],
     "scripts": {
-        "copy:wasmlib": "rm -rf ./dist/wasmlib && mkdir ./dist/wasmlib && cp ./src/wasmlib/funcfiftlib.js ./dist/wasmlib/funcfiftlib.js && cp ./src/wasmlib/funcfiftlib.wasm.js ./dist/wasmlib/funcfiftlib.wasm.js",
-        "build": "yarn wasm:pack && tsc && yarn copy:wasmlib",
-        "test": "jest",
-        "wasm:pack": "node ./scripts/pack_wasm.js",
-        "release": "rm -fr dist && jest && yarn build && yarn publish --access public"
+        "build": "rm -rf dist && tsc",
+        "test": "yarn jest",
+        "release": "yarn test && yarn build && yarn publish --access public"
     },
-    "dependencies": {},
     "devDependencies": {
         "@types/jest": "^24.0.23",
         "jest": "^26.4.2",
+        "ton": "^11.18.2",
         "ts-jest": "^26.4.0",
-        "typescript": "^3.7.2",
-        "ton": "^11.18.2"
+        "typescript": "^4.9.4"
+    },
+    "dependencies": {
+        "@ton-community/func-js-bin": "0.3.0"
     }
 }

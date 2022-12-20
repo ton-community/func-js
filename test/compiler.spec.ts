@@ -1,14 +1,12 @@
-import {compileFunc, compilerVersion, SuccessResult, ErrorResult, mapSourceResolver} from '../src/index';
+import {compileFunc, compilerVersion, SuccessResult, ErrorResult, mapSourceResolver, latestCompiler} from '../src/index';
 import fs from 'fs';
 import {Cell} from 'ton';
 
-describe('ton-compiler', () => {
+describe('func-js', () => {
     const walletCodeCellHash = Buffer.from("hA3nAz+xEJePYGrDyjJ+BXBcxSp9Y2xaAFLRgGntfDs=", 'base64');
 
     const compilerVersionExpected = {
         funcVersion: "0.3.0",
-        funcFiftLibCommitHash: "3dd87ae7a703d2771c4e299a4490eb66787eb270",
-        funcFiftLibCommitDate: "2022-11-15 17:17:07 +0300"
     };
 
     it('should return compiler version', async () => {
@@ -160,5 +158,9 @@ describe('ton-compiler', () => {
         });
 
         expect(result.status).toBe('ok');
+    })
+
+    it('should validate version', async () => {
+        await latestCompiler.validateVersion();
     })
 });
