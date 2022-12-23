@@ -1,0 +1,85 @@
+#!/usr/bin/env node
+import arg from 'arg';
+import { compileFunc, compilerVersion } from '.';
+import { readFileSync, writeFileSync } from 'fs';
+
+const main = async () => {
+    const args = arg({
+        '--version': Boolean,
+        '--help': Boolean,
+        '--require-version': String,
+        '--artifact': String,
+        '--boc': String,
+        '--boc-base64': String,
+        '--fift': String,
+
+        '-v': '--version',
+        '-h': '--help',
+    });
+
+    if (args['--help']) {
+        console.log(`Usage: func-js [OPTIONS] targets
+Options:
+-h, --help - print this and exit
+-v, --version - print func version and exit
+--require-version - set the required func version, exit if it is different
+--artifact - path where JSON artifact will be written
+--boc - path where compiled code will be written as binary bag of cells
+--boc-base64 - path where compiled code will be written as bag of cells using base64 encoding
+--fift - path where compiled fift code will be written`);
+        process.exit(0);
+    }
+
+    const v = await compilerVersion();
+
+    if (args['--require-version'] !== undefined && v.funcVersion !== args['--require-version']) {
+        console.error(`Failed to run func-js: the required func version is ${args['--require-version']}, but the func version is ${v.funcVersion}`);
+        process.exit(1);
+    }
+
+    if (args['--version']) {
+        console.log(`func v${v.funcVersion}`);
+        process.exit(0);
+    }
+
+    if (args._.length === 0) {
+        console.error('No targets were specified. Run with -h to see help.');
+        process.exit(1);
+    }
+
+    console.log(`Compiling using func v${v.funcVersion}`);
+
+    const cr = await compileFunc({
+        targets: args._,
+        sources: (path: string) => readFileSync(path).toString(),
+    });
+
+    if (cr.status === 'error') {
+        console.error(cr.message);
+        process.exit(1);
+    }
+
+    if (args['--artifact'] !== undefined) {
+        writeFileSync(args['--artifact'], JSON.stringify({
+            artifactVersion: 1,
+            version: v.funcVersion,
+            snapshot: cr.snapshot,
+        }));
+    }
+
+    if (args['--boc-base64'] !== undefined) {
+        writeFileSync(args['--boc-base64'], cr.codeBoc);
+    }
+
+    if (args['--boc'] !== undefined) {
+        writeFileSync(args['--boc'], Buffer.from(cr.codeBoc, 'base64'));
+    }
+
+    if (args['--fift'] !== undefined) {
+        writeFileSync(args['--fift'], cr.fiftCode);
+    }
+
+    console.log('Done!');
+};
+
+main();
