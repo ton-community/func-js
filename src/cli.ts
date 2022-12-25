@@ -23,7 +23,7 @@ Options:
 -h, --help - print this and exit
 -v, --version - print func version and exit
 --require-version - set the required func version, exit if it is different
---artifact - path where JSON artifact will be written
+--artifact - path where JSON artifact, containing will be written
 --boc - path where compiled code will be written as binary bag of cells
 --boc-base64 - path where compiled code will be written as bag of cells using base64 encoding
 --fift - path where compiled fift code will be written`);
@@ -47,6 +47,11 @@ Options:
         process.exit(1);
     }
 
+    if (!args['--artifact'] && !args['--boc'] && !args['--boc-base64'] && !args['--fift']) {
+        console.error('No output options were specified. Run with -h to see help.');
+        process.exit(1);
+    }
+
     console.log(`Compiling using func v${v.funcVersion}`);
 
     const cr = await compileFunc({
@@ -63,7 +68,9 @@ Options:
         writeFileSync(args['--artifact'], JSON.stringify({
             artifactVersion: 1,
             version: v.funcVersion,
-            snapshot: cr.snapshot,
+            sources: cr.snapshot,
+            codeBoc: cr.codeBoc,
+            fiftCode: cr.fiftCode,
         }));
     }
 
