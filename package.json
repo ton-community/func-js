@@ -3,7 +3,9 @@
     "version": "0.3.0",
     "description": "The TON FunC smart-contract compiler",
     "main": "dist/index.js",
-    "bin": "./dist/cli.js",
+    "bin": {
+        "func-js": "./dist/cli.js"
+    },
     "author": "TonTech",
     "license": "MIT",
     "repository": {

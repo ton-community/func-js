@@ -23,10 +23,11 @@ Options:
 -h, --help - print this and exit
 -v, --version - print func version and exit
 --require-version - set the required func version, exit if it is different
---artifact - path where JSON artifact will be written
+--artifact - path where JSON artifact, containing BOC and FIFT output, will be written
 --boc - path where compiled code will be written as binary bag of cells
 --boc-base64 - path where compiled code will be written as bag of cells using base64 encoding
---fift - path where compiled fift code will be written`);
+--fift - path where compiled fift code will be written
+`);
         process.exit(0);
     }
 
@@ -63,7 +64,9 @@ Options:
         writeFileSync(args['--artifact'], JSON.stringify({
             artifactVersion: 1,
             version: v.funcVersion,
-            snapshot: cr.snapshot,
+            sources: cr.snapshot,
+            codeBoc: cr.codeBoc,
+            fiftCode: cr.fiftCode,
         }));
     }
 
@@ -79,7 +82,13 @@ Options:
         writeFileSync(args['--fift'], cr.fiftCode);
     }
 
-    console.log('Done!');
+    console.log('Compiled successfully!');
+
+    if (!args['--artifact'] && !args['--boc'] && !args['--boc-base64'] && !args['--fift']) {
+        console.warn('Warning: No output options were specified. Run with -h to see help.');
+    } else {
+        console.log('Written output files.');
+    }
 };
 
 main();

@@ -89,6 +89,10 @@ Note that all FunC source files contents used in your project should be passed t
 - stdlib.fc (if you use it)
 - all files included in entry points
 
+## CLI
+Usage: `npx func-js ./stdlib.fc ./wallet.fc --boc ./output.boc`
+See more output options by running `npx func-js -h`
+
 ## License
 
 This package is released under the [MIT License](LICENSE).
