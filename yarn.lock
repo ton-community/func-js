@@ -546,10 +546,10 @@
   dependencies:
     "@sinonjs/commons" "^1.7.0"
 
-"@ton-community/func-js-bin@0.3.0":
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/@ton-community/func-js-bin/-/func-js-bin-0.3.0.tgz#0351ffc1f924a1f105b788bbc78b1aa444ac0529"
-  integrity sha512-XX4ekCyX8+Gn0XlDqtQxpDVWjD+GQN1PTl1pG4+ipJa215I7RXcMJH+WpLG4+mJObwvQaHhnIHYkbWe/uOe+Yg==
+"@ton-community/func-js-bin@0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@ton-community/func-js-bin/-/func-js-bin-0.4.0.tgz#c9ef7e04d03990c23621be4c7fcec704ed817b8f"
+  integrity sha512-M8+nE6rfdxfpgiBwtMSlRQrXB3go9cYrk36SKFgk3s14h+yA8PYCmBCYXRlkOxXgp4AlcEJ/aKTjIhidqVg9rw==
 
 "@tootallnate/once@1":
   version "1.1.2"
