@@ -2,6 +2,7 @@
 import arg from 'arg';
 import { compileFunc, compilerVersion } from '.';
 import { readFileSync, writeFileSync } from 'fs';
+import path from 'path';
 
 const main = async () => {
     const args = arg({
@@ -12,9 +13,11 @@ const main = async () => {
         '--boc': String,
         '--boc-base64': String,
         '--fift': String,
+        '--cwd': String,
 
         '-v': '--version',
         '-h': '--help',
+        '-C': '--cwd',
     });
 
     if (args['--help']) {
@@ -22,11 +25,12 @@ const main = async () => {
 Options:
 -h, --help - print this and exit
 -v, --version - print func version and exit
---require-version - set the required func version, exit if it is different
---artifact - path where JSON artifact, containing BOC and FIFT output, will be written
---boc - path where compiled code will be written as binary bag of cells
---boc-base64 - path where compiled code will be written as bag of cells using base64 encoding
---fift - path where compiled fift code will be written
+--cwd <path>, -C <path> - run func-js as if it was launched from the given path (useful in npm scripts)
+--require-version <version> - set the required func version, exit if it is different
+--artifact <path> - path where JSON artifact, containing BOC and FIFT output, will be written
+--boc <path> - path where compiled code will be written as binary bag of cells
+--boc-base64 <path> - path where compiled code will be written as bag of cells using base64 encoding
+--fift <path> - path where compiled fift code will be written
 `);
         process.exit(0);
     }
@@ -50,9 +54,14 @@ Options:
 
     console.log(`Compiling using func v${v.funcVersion}`);
 
+    const basePath = args['--cwd'];
+    const pathResolver = basePath === undefined
+        ? (p: string) => p
+        : (p: string) => path.join(basePath, p);
+
     const cr = await compileFunc({
         targets: args._,
-        sources: (path: string) => readFileSync(path).toString(),
+        sources: (reqPath: string) => readFileSync(pathResolver(reqPath)).toString(),
     });
 
     if (cr.status === 'error') {
