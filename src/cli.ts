@@ -2,6 +2,7 @@
 import arg from 'arg';
 import { compileFunc, compilerVersion } from '.';
 import { readFileSync, writeFileSync } from 'fs';
+import path from 'path';
 
 const main = async () => {
     const args = arg({
@@ -34,10 +35,6 @@ Options:
         process.exit(0);
     }
 
-    if (args['--cwd'] !== undefined) {
-        process.chdir(args['--cwd']);
-    }
-
     const v = await compilerVersion();
 
     if (args['--require-version'] !== undefined && v.funcVersion !== args['--require-version']) {
@@ -57,9 +54,14 @@ Options:
 
     console.log(`Compiling using func v${v.funcVersion}`);
 
+    const basePath = args['--cwd'];
+    const pathResolver = basePath === undefined
+        ? (p: string) => p
+        : (p: string) => path.join(basePath, p);
+
     const cr = await compileFunc({
         targets: args._,
-        sources: (path: string) => readFileSync(path).toString(),
+        sources: (reqPath: string) => readFileSync(pathResolver(reqPath)).toString(),
     });
 
     if (cr.status === 'error') {
