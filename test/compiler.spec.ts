@@ -161,6 +161,6 @@ describe('func-js', () => {
     })
 
     it('should validate version', async () => {
-        await latestCompiler.validateVersion();
+        expect(await latestCompiler.validateVersion()).toBe(true);
     })
 });
