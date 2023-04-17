@@ -1,12 +1,12 @@
 import {compileFunc, compilerVersion, SuccessResult, ErrorResult, mapSourceResolver, latestCompiler} from '../src/index';
 import fs from 'fs';
-import {Cell} from 'ton';
+import {Cell} from 'ton-core';
 
 describe('func-js', () => {
     const walletCodeCellHash = Buffer.from("hA3nAz+xEJePYGrDyjJ+BXBcxSp9Y2xaAFLRgGntfDs=", 'base64');
 
     const compilerVersionExpected = {
-        funcVersion: "0.4.2",
+        funcVersion: "0.4.3",
     };
 
     it('should return compiler version', async () => {
