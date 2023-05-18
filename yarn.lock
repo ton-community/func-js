@@ -718,10 +718,10 @@
   dependencies:
     "@sinonjs/commons" "^2.0.0"
 
-"@ton-community/func-js-bin@0.4.3":
-  version "0.4.3"
-  resolved "https://registry.yarnpkg.com/@ton-community/func-js-bin/-/func-js-bin-0.4.3.tgz#2eb0ef4fdcd7cfea9d4741173575d581ebb4ac27"
-  integrity sha512-GOKje82hVRWYwuVtfXehLBsnb+kDmDBvHsGRasboPNzrNsl0N4r6AeUeBwQxdPI6/Si2ZKDK1hO5RH0wR/3hYg==
+"@ton-community/func-js-bin@0.4.4":
+  version "0.4.4"
+  resolved "https://registry.yarnpkg.com/@ton-community/func-js-bin/-/func-js-bin-0.4.4.tgz#b7b1b5b5e0939286cf2ccb0b8ff6c1db5774e623"
+  integrity sha512-zCSVXmh+rFMgouzTbWkSVDIt1Z5i36u9rws/Kuqn89/a0vhA1aEoJJ3oJypz0TjWKJQveU4doJsPlqu7UT2zkw==
 
 "@types/babel__core@^7.1.14":
   version "7.20.0"
