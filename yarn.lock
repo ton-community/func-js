@@ -718,10 +718,10 @@
   dependencies:
     "@sinonjs/commons" "^2.0.0"
 
-"@ton-community/func-js-bin@0.4.5-tvmbeta.1":
-  version "0.4.5-tvmbeta.1"
-  resolved "https://registry.yarnpkg.com/@ton-community/func-js-bin/-/func-js-bin-0.4.5-tvmbeta.1.tgz#0d6785ebf9cf1a689db4568f663e41586ed3e0c8"
-  integrity sha512-RjiF47XnOwZ26/HDX5M1KPoH9Xd8FwRqEYtj6FXMYOS2lUlYdZOnBYTMuwRkfNl2hRSrg15NkErl5aRR8YTMzg==
+"@ton-community/func-js-bin@0.4.5-tvmbeta.2":
+  version "0.4.5-tvmbeta.2"
+  resolved "https://registry.yarnpkg.com/@ton-community/func-js-bin/-/func-js-bin-0.4.5-tvmbeta.2.tgz#9df34712dbfa8d9104127541ee51a2a76bed3890"
+  integrity sha512-QEi7ImZQ5nudRL9i5lEhkRPdEXEUxLUqjdyOamTXttXuW6v+YVrnBMBqQ4Pg25kwujQ+4Kyfq56q/ltfALlDPg==
 
 "@types/babel__core@^7.1.14":
   version "7.20.0"
