@@ -1,6 +1,6 @@
 {
     "name": "@ton-community/func-js",
-    "version": "0.6.3",
+    "version": "0.7.0",
     "description": "The TON FunC smart-contract compiler",
     "main": "dist/index.js",
     "bin": {
@@ -29,7 +29,7 @@
         "typescript": "^4.9.5"
     },
     "dependencies": {
-        "@ton-community/func-js-bin": "0.4.4-newops",
+        "@ton-community/func-js-bin": "0.4.4-newops.1",
         "arg": "^5.0.2"
     }
 }
