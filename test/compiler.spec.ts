@@ -3,17 +3,16 @@ import fs from 'fs';
 import {Cell} from 'ton-core';
 
 describe('func-js', () => {
-    const walletCodeCellHash = Buffer.from("hA3nAz+xEJePYGrDyjJ+BXBcxSp9Y2xaAFLRgGntfDs=", 'base64');
+    const walletCodeCellHash = "8OtG02lbUYFZHJXjmAjKn0p69Ih9Y0V+4eS5KKH/Io0=";
 
     const compilerVersionExpected = {
-        funcVersion: "0.4.4",
-        funcFiftLibCommitDate: "2024-03-27 12:57:15 +0300",
-        funcFiftLibCommitHash: "ffe0a1c63073dda0a0dd0e14f199b83fe5b05e66",
+        funcVersion: "0.5.0",
+        funcFiftLibCommitHash: "3c02cbfcbb83739c5138f33ae58ae3abf8d593f4",
     };
 
     it('should return compiler version', async () => {
         let version = await compilerVersion();
-        expect(version).toEqual(compilerVersionExpected);
+        expect(version).toMatchObject(compilerVersionExpected);
     });
 
     it('should compile', async () => {
@@ -30,7 +29,7 @@ describe('func-js', () => {
         result = result as SuccessResult;
 
         let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
-        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true);
+        expect(codeCell.hash().toString('base64')).toBe(walletCodeCellHash);
     });
 
     it('should compile using map source resolver', async () => {
@@ -47,7 +46,7 @@ describe('func-js', () => {
         result = result as SuccessResult;
 
         let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
-        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true);
+        expect(codeCell.hash().toString('base64')).toBe(walletCodeCellHash);
     });
 
     it('should handle includes', async () => {
@@ -65,7 +64,7 @@ describe('func-js', () => {
         result = result as SuccessResult;
 
         let codeCell = Cell.fromBoc(Buffer.from(result.codeBoc, "base64"))[0];
-        expect(codeCell.hash().equals(walletCodeCellHash)).toBe(true);
+        expect(codeCell.hash().toString('base64')).toBe(walletCodeCellHash);
     });
 
     it('should fail if entry point source is not provided', async () => {

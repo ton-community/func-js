@@ -1,12 +1,12 @@
 #include "stdlib.fc";
 
-;; Simple wallet smart contract
+// Simple wallet smart contract
 
-() recv_internal(slice in_msg) impure {
-  ;; do nothing for internal messages
+() recv_internal(slice in_msg) {
+  // do nothing for internal messages
 }
 
-() recv_external(slice in_msg) impure {
+() recv_external(slice in_msg) {
   var signature = in_msg~load_bits(512);
   var cs = in_msg;
   var (msg_seqno, valid_until) = (cs~load_uint(32), cs~load_uint(32));
@@ -26,13 +26,13 @@
   set_data(begin_cell().store_uint(stored_seqno + 1, 32).store_uint(public_key, 256).end_cell());
 }
 
-;; Get methods
+// Get methods
 
-int seqno() method_id {
+get int seqno() {
   return get_data().begin_parse().preload_uint(32);
 }
 
-int get_public_key() method_id {
+get int get_public_key() {
   var cs = get_data().begin_parse();
   cs~load_uint(32);
   return cs.preload_uint(256);
