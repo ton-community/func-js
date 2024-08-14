@@ -14,10 +14,12 @@ const main = async () => {
         '--boc-base64': String,
         '--fift': String,
         '--cwd': String,
+        '--debug-info': String,
 
         '-v': '--version',
         '-h': '--help',
         '-C': '--cwd',
+        '-d': '--debug-info',
     });
 
     if (args['--help']) {
@@ -31,6 +33,7 @@ Options:
 --boc <path> - path where compiled code will be written as binary bag of cells
 --boc-base64 <path> - path where compiled code will be written as bag of cells using base64 encoding
 --fift <path> - path where compiled fift code will be written
+--debug-info <path>, -d <path> - path where to write debug info (WARNING: FIFT output is modified when this option is present!)
 `);
         process.exit(0);
     }
@@ -62,6 +65,7 @@ Options:
     const cr = await compileFunc({
         targets: args._,
         sources: (reqPath: string) => readFileSync(pathResolver(reqPath)).toString(),
+        debugInfo: args['--debug-info'] !== undefined,
     });
 
     if (cr.status === 'error') {
@@ -89,6 +93,10 @@ Options:
 
     if (args['--fift'] !== undefined) {
         writeFileSync(args['--fift'], cr.fiftCode);
+    }
+
+    if (args['--debug-info'] !== undefined) {
+        writeFileSync(args['--debug-info'], JSON.stringify(cr.debugInfo));
     }
 
     console.log('Compiled successfully!');

@@ -60,6 +60,7 @@ export const sourcesResolver = (sources: Sources): SourceResolver => {
  */
 export type CompilerConfig = {
     optLevel?: number
+    debugInfo?: boolean
 } & ({
     targets: string[]
     sources: SourceResolver | SourcesMap
@@ -68,11 +69,22 @@ export type CompilerConfig = {
     sources: SourcesArray
 });
 
+export type DebugInfoEntry = {
+    file: string
+    line: number
+    pos: number
+    vars?: string[]
+    func: string
+    first_stmt?: true
+    ret?: true
+};
+
 export type SuccessResult = {
     status: "ok"
     codeBoc: string
     fiftCode: string
     warnings: string
+    debugInfo?: DebugInfoEntry[]
     snapshot: SourcesArray
 };
 
@@ -202,6 +214,7 @@ export class FuncCompiler {
         const configStr = JSON.stringify({
             sources: targets,
             optLevel: compileConfig.optLevel || 2,
+            debugInfo: compileConfig.debugInfo,
         });
 
         const configStrPointer = copyToCString(mod, configStr);
