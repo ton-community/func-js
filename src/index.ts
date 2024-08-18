@@ -69,7 +69,7 @@ export type CompilerConfig = {
     sources: SourcesArray
 });
 
-export type DebugInfoEntry = {
+export type LocationEntry = {
     file: string
     line: number
     pos: number
@@ -79,12 +79,21 @@ export type DebugInfoEntry = {
     ret?: true
 };
 
+export type GlobalVarEntry = {
+    name: string
+};
+
+export type DebugInfo = {
+    globals: GlobalVarEntry[]
+    locations: LocationEntry[]
+};
+
 export type SuccessResult = {
     status: "ok"
     codeBoc: string
     fiftCode: string
     warnings: string
-    debugInfo?: DebugInfoEntry[]
+    debugInfo?: DebugInfo
     snapshot: SourcesArray
 };
 
