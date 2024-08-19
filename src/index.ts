@@ -77,6 +77,7 @@ export type LocationEntry = {
     func: string
     first_stmt?: true
     ret?: true
+    is_catch?: true
 };
 
 export type GlobalVarEntry = {
