@@ -1,6 +1,6 @@
 SETCP0
 (:methods
-  recv_internal: 
+  recv_internal:
     s2 POP
     s1 PUSH
     SEMPTY
@@ -706,14 +706,14 @@ SETCP0
     16 PUSHPOW2DEC
     THROWANY
 
-  1: 
+  1:
     REWRITESTDADDR
     s0 POP
     0 PUSHINT
     EQUAL
     333 THROWIFNOT
 
-  2: 
+  2:
     c4 PUSH
     CTOS
     64 LDU
@@ -739,7 +739,7 @@ SETCP0
     PUSHNULL
     PUSHNULL
 
-  3: 
+  3:
     s0 s4 XCHG
     NEWC
     64 STU
@@ -753,11 +753,11 @@ SETCP0
     ENDC
     c4 POP
 
-  get_editor: 
+  get_editor:
     2 CALLDICT
     5 1 BLKDROP2
 
-  get_nft_data: 
+  get_nft_data:
     2 CALLDICT
     s0 POP
 ) 19 DICTPUSHCONST
