@@ -6,9 +6,9 @@ describe('func-js', () => {
     const walletCodeCellHash = Buffer.from("hA3nAz+xEJePYGrDyjJ+BXBcxSp9Y2xaAFLRgGntfDs=", 'base64');
 
     const compilerVersionExpected = {
-        funcVersion: "0.4.4",
-        funcFiftLibCommitDate: "2024-08-19 19:35:52 +0300",
-        funcFiftLibCommitHash: "5aa2617a6ce1d6646117bd297b14e33795fbdc8b",
+        funcVersion: "0.4.6",
+        funcFiftLibCommitDate: "",
+        funcFiftLibCommitHash: "",
     };
 
     it('should return compiler version', async () => {

@@ -78,6 +78,8 @@ export type LocationEntry = {
     first_stmt?: true
     ret?: true
     is_catch?: true
+    ctx_id: number
+    req_ctx_id?: number
 };
 
 export type GlobalVarEntry = {
@@ -94,6 +96,7 @@ export type SuccessResult = {
     codeBoc: string
     fiftCode: string
     warnings: string
+    debugMarksBoc?: string
     debugInfo?: DebugInfo
     snapshot: SourcesArray
 };
