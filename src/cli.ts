@@ -11,9 +11,11 @@ const main = async () => {
         '--require-version': String,
         '--artifact': String,
         '--boc': String,
+        '--boc-hex': String,
         '--boc-base64': String,
         '--fift': String,
         '--cwd': String,
+        '--verbose': Boolean,
 
         '-v': '--version',
         '-h': '--help',
@@ -22,37 +24,47 @@ const main = async () => {
 
     if (args['--help']) {
         console.log(`Usage: func-js [OPTIONS] targets
+
+targets: One or more FunC source files to compile
+
 Options:
--h, --help - print this and exit
--v, --version - print func version and exit
---cwd <path>, -C <path> - run func-js as if it was launched from the given path (useful in npm scripts)
---require-version <version> - set the required func version, exit if it is different
---artifact <path> - path where JSON artifact, containing BOC and FIFT output, will be written
---boc <path> - path where compiled code will be written as binary bag of cells
---boc-base64 <path> - path where compiled code will be written as bag of cells using base64 encoding
---fift <path> - path where compiled fift code will be written
+  -h, --help                   Show this help message and exit
+  -v, --version                Show compiler version and exit
+  -C, --cwd <path>             Use <path> as the working directory (useful in npm scripts)
+  --require-version <version>  Enforce a specific FunC compiler version
+  --verbose                    Enable verbose output
+
+Output options:
+  --artifact <path>            Write full JSON artifact (BoC, Fift, etc.) to the specified file
+  --boc <path>                 Write BoC binary to the specified file
+  --boc-hex <path>             Write BoC as hex to the specified file. Use "" to output to the console
+  --boc-base64 <path>          Write BoC as base64 to the specified file. Use "" to output to the console
+  --fift <path>                Write Fift code to the specified file. Use "" to output to the console
 `);
         process.exit(0);
     }
 
+    const verbose = args['--verbose'] ?? false;
+    const verboseLog = (message: string) => verbose && console.log(message);
+
     const v = await compilerVersion();
 
     if (args['--require-version'] !== undefined && v.funcVersion !== args['--require-version']) {
-        console.error(`Failed to run func-js: the required func version is ${args['--require-version']}, but the func version is ${v.funcVersion}`);
+        console.error(`Error: Required FunC version "${args['--require-version']}", but found "${v.funcVersion}"`);
         process.exit(1);
     }
 
     if (args['--version']) {
-        console.log(`func v${v.funcVersion}`);
+        console.log(`FunC v${v.funcVersion}`);
         process.exit(0);
     }
 
     if (args._.length === 0) {
-        console.error('No targets were specified. Run with -h to see help.');
+        console.error('Error: No target files specified. Use --help to see available options.');
         process.exit(1);
     }
 
-    console.log(`Compiling using func v${v.funcVersion}`);
+    verboseLog(`Using FunC compiler v${v.funcVersion}`);
 
     const basePath = args['--cwd'];
     const pathResolver = basePath === undefined
@@ -69,34 +81,68 @@ Options:
         process.exit(1);
     }
 
-    if (args['--artifact'] !== undefined) {
-        writeFileSync(args['--artifact'], JSON.stringify({
+    let hasOutput = false;
+    verboseLog('Compilation successful.');
+
+    const jsonArtifactOutputFilePath = args['--artifact'];
+    if (jsonArtifactOutputFilePath !== undefined) {
+        writeFileSync(jsonArtifactOutputFilePath, JSON.stringify({
             artifactVersion: 1,
             version: v.funcVersion,
             sources: cr.snapshot,
             codeBoc: cr.codeBoc,
             fiftCode: cr.fiftCode,
         }));
+        verboseLog(`Compilation artifact written to "${jsonArtifactOutputFilePath}"`);
+        hasOutput = true;
     }
 
-    if (args['--boc-base64'] !== undefined) {
-        writeFileSync(args['--boc-base64'], cr.codeBoc);
+    const bocBinaryOutputFilePath = args['--boc'];
+    if (bocBinaryOutputFilePath !== undefined) {
+        writeFileSync(bocBinaryOutputFilePath, Buffer.from(cr.codeBoc, 'base64'));
+        verboseLog(`BoC binary written to "${bocBinaryOutputFilePath}"`);
+        hasOutput = true;
     }
 
-    if (args['--boc'] !== undefined) {
-        writeFileSync(args['--boc'], Buffer.from(cr.codeBoc, 'base64'));
+    const bocBase64 = cr.codeBoc;
+
+    const bocHexOutputFilePath = args['--boc-hex']?.trim();
+    if (bocHexOutputFilePath != undefined) {
+        const bocHex = Buffer.from(bocBase64, 'base64').toString('hex');
+        if (bocHexOutputFilePath) {
+            writeFileSync(bocHexOutputFilePath, bocHex);
+            verboseLog(`BoC (hex) written to "${bocHexOutputFilePath}"`);
+        } else {
+            console.log(bocHex);
+        }
+        hasOutput = true;
     }
 
-    if (args['--fift'] !== undefined) {
-        writeFileSync(args['--fift'], cr.fiftCode);
+    const bocBase64OutputFilePath = args['--boc-base64']?.trim();
+    if (bocBase64OutputFilePath != undefined) {
+        if (bocBase64OutputFilePath) {
+            writeFileSync(bocBase64OutputFilePath, bocBase64);
+            verboseLog(`BoC (base64) written to "${bocBase64OutputFilePath}"`);
+        } else {
+            console.log(bocBase64);
+        }
+        hasOutput = true;
     }
 
-    console.log('Compiled successfully!');
+    const fiftCodeOutputFilePath = args['--fift']?.trim();
+    if (fiftCodeOutputFilePath != undefined) {
+        const fiftCode = cr.fiftCode;
+        if (fiftCodeOutputFilePath) {
+            writeFileSync(fiftCodeOutputFilePath, fiftCode);
+            verboseLog(`Fift code written to "${fiftCodeOutputFilePath}"`);
+        } else {
+            console.log(fiftCode);
+        }
+        hasOutput = true;
+    }
 
-    if (!args['--artifact'] && !args['--boc'] && !args['--boc-base64'] && !args['--fift']) {
-        console.warn('Warning: No output options were specified. Run with -h to see help.');
-    } else {
-        console.log('Written output files.');
+    if (!hasOutput) {
+        console.warn('Warning: No output options specified. Use --help to see available options.');
     }
 };
 
