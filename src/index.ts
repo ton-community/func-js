@@ -1,10 +1,42 @@
-import {base64Decode} from "./utils";
+import { normalize } from "./path";
+import { base64Decode } from "./utils";
+import { object as latestObject } from "@ton-community/func-js-bin";
 
-const CompilerModule = require('./wasmlib/funcfiftlib.js');
-const {FuncFiftLibWasm} = require('./wasmlib/funcfiftlib.wasm.js')
+export type SourcesMap = { [filename: string]: string };
 
-// Prepare binary
-const WasmBinary = base64Decode(FuncFiftLibWasm)
+export type SourceEntry = {
+    filename: string
+    content: string
+};
+
+export type SourcesArray = SourceEntry[];
+
+export type SourceResolver = (path: string) => string;
+
+export type Sources = SourcesMap | SourcesArray | SourceResolver;
+
+export const mapSourceResolver = (map: SourcesMap): SourceResolver => {
+    return (path: string) => {
+        if (path in map) {
+            return map[path];
+        }
+        throw new Error(`Cannot find source file \`${path}\``);
+    };
+};
+
+export const arraySourceResolver = (arr: SourcesArray): SourceResolver => {
+    return (path: string) => {
+        const entry = arr.find(e => e.filename === path);
+        if (entry === undefined) throw new Error(`Cannot find source file \`${path}\``);
+        return entry.content;
+    };
+};
+
+export const sourcesResolver = (sources: Sources): SourceResolver => {
+    if (typeof sources === 'function') return sources;
+    if (Array.isArray(sources)) return arraySourceResolver(sources);
+    return mapSourceResolver(sources);
+};
 
 /*
  * CompilerConfig example:
@@ -26,74 +58,184 @@ const WasmBinary = base64Decode(FuncFiftLibWasm)
  * }
  *
  */
-export type SourcesMap = { [filename: string]: string }
-
 export type CompilerConfig = {
-    entryPoints: string[],
-    sources: SourcesMap,
     optLevel?: number
-};
+} & ({
+    targets: string[]
+    sources: SourceResolver | SourcesMap
+} | {
+    targets?: string[]
+    sources: SourcesArray
+});
 
 export type SuccessResult = {
-    status: "ok",
-    codeBoc: string,
-    fiftCode: string,
+    status: "ok"
+    codeBoc: string
+    fiftCode: string
     warnings: string
+    snapshot: SourcesArray
 };
 
 export type ErrorResult = {
-    status: "error",
+    status: "error"
     message: string
+    snapshot: SourcesArray
 };
 
 export type CompileResult = SuccessResult | ErrorResult;
 
 export type CompilerVersion = {
-    funcVersion: string,
-    funcFiftLibCommitHash: string,
-    funcFiftLibCommitDate: string
-}
+    funcVersion: string
+};
 
-export async function compilerVersion(): Promise<CompilerVersion> {
-    let mod = await CompilerModule({ wasmBinary: WasmBinary });
+const copyToCString = (mod: any, str: string) => {
+    const len = mod.lengthBytesUTF8(str) + 1;
+    const ptr = mod._malloc(len);
+    mod.stringToUTF8(str, ptr, len);
+    return ptr;
+};
 
-    let versionJsonPointer = mod._version();
-    let versionJson = mod.UTF8ToString(versionJsonPointer);
-    mod._free(versionJsonPointer);
+const copyToCStringPtr = (mod: any, str: string, ptr: any) => {
+    const allocated = copyToCString(mod, str);
+    mod.setValue(ptr, allocated, '*');
+    return allocated;
+};
 
-    return JSON.parse(versionJson);
-}
+const copyFromCString = (mod: any, ptr: any) => {
+    return mod.UTF8ToString(ptr);
+};
 
-export async function compileFunc(compileConfig: CompilerConfig): Promise<CompileResult> {
+type FuncWASMObject = {
+    schemaVersion: 1;
+    funcVersion: string;
+    module: any;
+    wasmBase64: string;
+};
 
-    let entryWithNoSource = compileConfig.entryPoints.find(filename => typeof compileConfig.sources[filename] !== 'string')
-    if (entryWithNoSource) {
-        throw new Error(`The entry point ${entryWithNoSource} has not provided in sources.`)
+export class FuncCompiler {
+    private module: any;
+    private wasmBinary: Uint8Array;
+    private inputFuncVersion: string;
+
+    constructor(funcWASMObject: any) {
+        if (!('schemaVersion' in funcWASMObject)) throw new Error('FunC WASM Object does not contain schemaVersion');
+
+        if (funcWASMObject.schemaVersion !== 1) throw new Error('FunC WASM Object is of unknown schemaVersion ' + funcWASMObject.schemaVersion);
+
+        const normalObject = funcWASMObject as FuncWASMObject;
+
+        this.module = normalObject.module;
+        this.wasmBinary = base64Decode(normalObject.wasmBase64);
+        this.inputFuncVersion = normalObject.funcVersion;
     }
 
-    let mod = await CompilerModule({ wasmBinary: WasmBinary });
+    private createModule = async () => await this.module({ wasmBinary: this.wasmBinary });
 
-    // Write sources to virtual FS
-    for (let fileName in compileConfig.sources) {
-        let source = compileConfig.sources[fileName];
-        mod.FS.writeFile(fileName, source);
+    compilerVersion = async (): Promise<CompilerVersion> => {
+        const mod = await this.createModule();
+
+        const versionJsonPointer = mod._version();
+        const versionJson = copyFromCString(mod, versionJsonPointer);
+        mod._free(versionJsonPointer);
+
+        return JSON.parse(versionJson);
     }
 
-    let configStr = JSON.stringify({
-        sources: compileConfig.entryPoints,
-        optLevel: compileConfig.optLevel || 2
-    });
+    validateVersion = async (): Promise<boolean> => {
+        const v = await this.compilerVersion();
 
-    let configStrPointer = mod._malloc(configStr.length + 1);
-    mod.stringToUTF8(configStr, configStrPointer, configStr.length + 1);
+        return v.funcVersion === this.inputFuncVersion;
+    }
 
-    let resultPointer = mod._func_compile(configStrPointer);
-    let retJson = mod.UTF8ToString(resultPointer);
+    compileFunc = async (compileConfig: CompilerConfig): Promise<CompileResult> => {
+        const resolver = sourcesResolver(compileConfig.sources);
 
-    // Cleanup
-    mod._free(resultPointer);
-    mod._free(configStrPointer);
-    mod = null
+        let targets = compileConfig.targets;
+        if (targets === undefined && Array.isArray(compileConfig.sources)) {
+            targets = compileConfig.sources.map(s => s.filename);
+        }
+        if (targets === undefined) {
+            throw new Error('`sources` is not an array and `targets` were not provided');
+        }
 
-    return JSON.parse(retJson);
+        const entryWithNoSource = targets.find(filename => {
+            try {
+                resolver(filename);
+                return false;
+            } catch (e) {
+                return true;
+            }
+        });
+        if (entryWithNoSource) {
+            throw new Error(`The entry point \`${entryWithNoSource}\` was not provided in sources.`)
+        }
+
+        const mod = await this.createModule();
+
+        const allocatedPointers = [];
+
+        const sourceMap: { [path: string]: { content: string, included: boolean } } = {};
+        const sourceOrder: string[] = [];
+
+        const callbackPtr = mod.addFunction((_kind: any, _data: any, contents: any, error: any) => {
+            const kind: string = copyFromCString(mod, _kind);
+            const data: string = copyFromCString(mod, _data);
+            if (kind === 'realpath') {
+                const path = normalize(data);
+                allocatedPointers.push(copyToCStringPtr(mod, path, contents));
+            } else if (kind === 'source') {
+                const path = normalize(data);
+                try {
+                    const source = resolver(path);
+                    sourceMap[path] = { content: source, included: false };
+                    sourceOrder.push(path);
+                    allocatedPointers.push(copyToCStringPtr(mod, source, contents));
+                } catch (err) {
+                    const e = err as any;
+                    allocatedPointers.push(copyToCStringPtr(mod, 'message' in e ? e.message : e.toString(), error));
+                }
+            } else {
+                allocatedPointers.push(copyToCStringPtr(mod, 'Unknown callback kind ' + kind, error));
+            }
+        }, 'viiii');
+
+        const configStr = JSON.stringify({
+            sources: targets,
+            optLevel: compileConfig.optLevel || 2,
+        });
+
+        const configStrPointer = copyToCString(mod, configStr);
+        allocatedPointers.push(configStrPointer);
+
+        const resultPointer = mod._func_compile(configStrPointer, callbackPtr);
+        allocatedPointers.push(resultPointer);
+        const retJson = copyFromCString(mod, resultPointer);
+
+        // Cleanup
+        allocatedPointers.forEach(ptr => mod._free(ptr));
+        mod.removeFunction(callbackPtr);
+
+        const snapshot: SourcesArray = [];
+        for (let i = sourceOrder.length - 1; i >= 0; i--) {
+            const path = sourceOrder[i];
+            if (sourceMap[path].included) continue;
+            snapshot.push({
+                filename: path,
+                content: sourceMap[path].content,
+            });
+        }
+
+        const ret = JSON.parse(retJson);
+
+        return {
+            ...ret,
+            snapshot,
+        };
+    }
 }
+
+export const latestCompiler = new FuncCompiler(latestObject);
+
+export const compilerVersion = latestCompiler.compilerVersion;
+
+export const compileFunc = latestCompiler.compileFunc;
