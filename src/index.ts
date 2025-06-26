@@ -1,6 +1,7 @@
 import { normalize } from "./path";
-import { base64Decode } from "./utils";
+import { base64Decode, decodePatch } from "./utils";
 import { object as latestObject } from "@ton-community/func-js-bin";
+import { gunzipSync } from "fflate";
 
 export type SourcesMap = { [filename: string]: string };
 
@@ -60,6 +61,7 @@ export const sourcesResolver = (sources: Sources): SourceResolver => {
  */
 export type CompilerConfig = {
     optLevel?: number
+    debugInfo?: boolean
 } & ({
     targets: string[]
     sources: SourceResolver | SourcesMap
@@ -68,12 +70,39 @@ export type CompilerConfig = {
     sources: SourcesArray
 });
 
+export type LocationEntry = {
+    file: string
+    line: number
+    pos: number
+    vars?: string[]
+    func: string
+    first_stmt?: true
+    ret?: true
+    try_catch_ctx_id?: number
+    is_try_end?: true
+    ctx_id: number
+    req_ctx_id?: number
+    branch_true_ctx_id?: number
+    branch_false_ctx_id?: number
+};
+
+export type GlobalVarEntry = {
+    name: string
+};
+
+export type DebugInfo = {
+    globals: GlobalVarEntry[]
+    locations: LocationEntry[]
+};
+
 export type SuccessResult = {
     status: "ok"
     codeBoc: string
     fiftCode: string
     warnings: string
     snapshot: SourcesArray
+    debugInfo?: DebugInfo
+    debugMarksBoc?: string
 };
 
 export type ErrorResult = {
@@ -110,12 +139,20 @@ type FuncWASMObject = {
     funcVersion: string;
     module: any;
     wasmBase64: string;
+    debugger?: {
+        module: any;
+        gzipPatchBase64: string;
+    };
 };
 
 export class FuncCompiler {
     private module: any;
     private wasmBinary: Uint8Array;
     private inputFuncVersion: string;
+
+    private debuggerModule?: any;
+    private debuggerGzipPatchBase64?: string;
+    private debuggerBinary?: Uint8Array;
 
     constructor(funcWASMObject: any) {
         if (!('schemaVersion' in funcWASMObject)) throw new Error('FunC WASM Object does not contain schemaVersion');
@@ -127,9 +164,39 @@ export class FuncCompiler {
         this.module = normalObject.module;
         this.wasmBinary = base64Decode(normalObject.wasmBase64);
         this.inputFuncVersion = normalObject.funcVersion;
+
+        if (normalObject.debugger) {
+            this.debuggerModule = normalObject.debugger.module;
+            this.debuggerGzipPatchBase64 = normalObject.debugger.gzipPatchBase64;
+        }
     }
 
+    private getDebuggerBinary = () => {
+        if (this.debuggerBinary !== undefined) {
+            return this.debuggerBinary;
+        }
+
+        if (this.debuggerGzipPatchBase64 === undefined) {
+            throw new Error('Debugger patch is not present');
+        }
+
+        const patch = base64Decode(this.debuggerGzipPatchBase64);
+        const unzipped = gunzipSync(patch);
+        this.debuggerBinary = decodePatch(this.wasmBinary, unzipped);
+        return this.debuggerBinary;
+    };
+
     private createModule = async () => await this.module({ wasmBinary: this.wasmBinary });
+
+    private createDebuggerModule = async () => {
+        if (this.debuggerModule === undefined) {
+            throw new Error('Debugger module is not present');
+        }
+
+        const binary = this.getDebuggerBinary();
+        const mod = await this.debuggerModule({ wasmBinary: binary });
+        return mod;
+    };
 
     compilerVersion = async (): Promise<CompilerVersion> => {
         const mod = await this.createModule();
@@ -170,7 +237,7 @@ export class FuncCompiler {
             throw new Error(`The entry point \`${entryWithNoSource}\` was not provided in sources.`)
         }
 
-        const mod = await this.createModule();
+        const mod = compileConfig.debugInfo ? await this.createDebuggerModule() : await this.createModule();
 
         const allocatedPointers = [];
 
@@ -202,6 +269,7 @@ export class FuncCompiler {
         const configStr = JSON.stringify({
             sources: targets,
             optLevel: compileConfig.optLevel || 2,
+            debugInfo: compileConfig.debugInfo,
         });
 
         const configStrPointer = copyToCString(mod, configStr);
