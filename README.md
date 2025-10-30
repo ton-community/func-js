@@ -45,7 +45,7 @@ See more output options by running `npx func-js -h`
 
 ```typescript
 import {compileFunc, compilerVersion} from '@ton-community/func-js';
-import {Cell} from 'ton';
+import {Cell} from '@ton/core';
 
 async function main() {
     // You can get compiler version 

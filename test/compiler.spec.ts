@@ -1,6 +1,6 @@
 import {compileFunc, compilerVersion, SuccessResult, ErrorResult, mapSourceResolver, latestCompiler} from '../src/index';
 import fs from 'fs';
-import {Cell} from 'ton-core';
+import {Cell} from '@ton/core';
 
 describe('func-js', () => {
     const walletCodeCellHash = Buffer.from("hA3nAz+xEJePYGrDyjJ+BXBcxSp9Y2xaAFLRgGntfDs=", 'base64');
