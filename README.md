@@ -6,7 +6,7 @@
 Cross-platform bindings and CLI for TON FunC compiler.
 
 ## Features
-
+tab
 - 🚀 No need to compile of download FunC binaries
 - 📦 Works both in Node.js & WEB (WASM support is required)
 - ⚙️ Compiles straight to BOC with code Cell
