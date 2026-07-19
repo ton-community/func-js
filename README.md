@@ -4,7 +4,7 @@
 [![Version npm](https://img.shields.io/npm/v/@ton-community/func-js.svg?logo=npm)](https://www.npmjs.com/package/@ton-community/func-js)
 
 Cross-platform bindings and CLI for TON FunC compiler.
-
+tab
 ## Features
 
 - 🚀 No need to compile of download FunC binaries
